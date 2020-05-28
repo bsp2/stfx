@@ -1,0 +1,6 @@
+
+TARGET=obxd_vcf
+TARGET_DIR := $(TARGET_DIR)/fx
+
+ALL_OBJ= \
+	obxd_vcf.o

@@ -1,0 +1,6 @@
+
+include ../../plugin_pre_msvc.mk
+
+include makefile.common
+
+include ../../plugin_post_msvc.mk

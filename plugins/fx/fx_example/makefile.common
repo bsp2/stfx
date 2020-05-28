@@ -1,0 +1,50 @@
+
+TARGET=fx_example
+TARGET_DIR := $(TARGET_DIR)/fx
+
+ALL_OBJ= \
+	ringmod.o    	     \
+	ws_tanh.o           \
+	ws_tanh_asym.o      \
+	bitcrusher.o        \
+	ws_exp.o  	 	     \
+	ws_fm.o  	 		  \
+	resample_nearest.o  \
+	resample_linear.o   \
+	biquad.o 			  \
+	biquad_lpf_1.o 	  \
+	biquad_lpf_2.o 	  \
+	biquad_lpf_3.o 	  \
+	biquad_lpf_4.o 	  \
+	biquad_hpf_1.o 	  \
+	biquad_hpf_2.o 	  \
+	biquad_hpf_3.o 	  \
+	biquad_hpf_4.o 	  \
+	biquad_bpf_1.o 	  \
+	biquad_bpf_2.o 	  \
+	biquad_bpf_3.o 	  \
+	biquad_bpf_4.o 	  \
+	biquad_brf_1.o 	  \
+	biquad_brf_2.o 	  \
+	biquad_brf_3.o 	  \
+	biquad_brf_4.o 	  \
+	biquad_peq_1.o 	  \
+	biquad_peq_2.o 	  \
+	biquad_peq_3.o 	  \
+	biquad_peq_4.o 	  \
+	biquad_lsh_1.o 	  \
+	biquad_lsh_2.o 	  \
+	biquad_lsh_3.o 	  \
+	biquad_lsh_4.o 	  \
+	biquad_hsh_1.o 	  \
+	biquad_hsh_2.o 	  \
+	biquad_hsh_3.o 	  \
+	biquad_hsh_4.o 	  \
+	amp.o 	           \
+	pan.o 	           \
+	ws_smoothstep.o     \
+	dly_1.o             \
+	dly_2.o             \
+	dly_flt_2.o         \
+	bitflipper.o        \
+	fx_example.o	
