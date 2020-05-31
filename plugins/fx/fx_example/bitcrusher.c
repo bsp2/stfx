@@ -8,7 +8,7 @@
 // ---- info   : a bit crusher that supports per-sample-frame parameter interpolation
 // ----
 // ---- created: 20May2020
-// ---- changed: 21May2020, 24May2020, 25May2020
+// ---- changed: 21May2020, 24May2020, 25May2020, 31May2020
 // ----
 // ----
 // ----
@@ -173,12 +173,12 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
    voice->amp_bias = powf(10.0f, (ampBias - 0.5f) * 4.0f);
 }
 
-static void ST_PLUGIN_API loc_process_fx_replace(st_plugin_voice_t  *_voice,
-                                                 int                 _bMonoIn,
-                                                 const float        *_samplesIn,
-                                                 float              *_samplesOut, 
-                                                 unsigned int        _numFrames
-                                                 ) {
+static void ST_PLUGIN_API loc_process_replace(st_plugin_voice_t  *_voice,
+                                              int                 _bMonoIn,
+                                              const float        *_samplesIn,
+                                              float              *_samplesOut, 
+                                              unsigned int        _numFrames
+                                              ) {
    // Ring modulate at (modulated) note frequency
    ST_PLUGIN_VOICE_CAST(bitcrusher_voice_t);
    ST_PLUGIN_VOICE_SHARED_CAST(bitcrusher_shared_t);
@@ -287,20 +287,20 @@ st_plugin_info_t *bitcrusher_init(void) {
       ret->base.num_params  = NUM_PARAMS;
       ret->base.num_mods    = NUM_MODS;
 
-      ret->base.shared_new         = &loc_shared_new;
-      ret->base.shared_delete      = &loc_shared_delete;
-      ret->base.voice_new          = &loc_voice_new;
-      ret->base.voice_delete       = &loc_voice_delete;
-      ret->base.get_param_name     = &loc_get_param_name;
-      ret->base.get_param_reset    = &loc_get_param_reset;
-      ret->base.get_param_value    = &loc_get_param_value;
-      ret->base.set_param_value    = &loc_set_param_value;
-      ret->base.get_mod_name       = &loc_get_mod_name;
-      ret->base.note_on            = &loc_note_on;
-      ret->base.set_mod_value      = &loc_set_mod_value;
-      ret->base.prepare_block      = &loc_prepare_block;
-      ret->base.process_fx_replace = &loc_process_fx_replace;
-      ret->base.plugin_exit        = &loc_plugin_exit;
+      ret->base.shared_new       = &loc_shared_new;
+      ret->base.shared_delete    = &loc_shared_delete;
+      ret->base.voice_new        = &loc_voice_new;
+      ret->base.voice_delete     = &loc_voice_delete;
+      ret->base.get_param_name   = &loc_get_param_name;
+      ret->base.get_param_reset  = &loc_get_param_reset;
+      ret->base.get_param_value  = &loc_get_param_value;
+      ret->base.set_param_value  = &loc_set_param_value;
+      ret->base.get_mod_name     = &loc_get_mod_name;
+      ret->base.note_on          = &loc_note_on;
+      ret->base.set_mod_value    = &loc_set_mod_value;
+      ret->base.prepare_block    = &loc_prepare_block;
+      ret->base.process_replace  = &loc_process_replace;
+      ret->base.plugin_exit      = &loc_plugin_exit;
    }
 
    return &ret->base;

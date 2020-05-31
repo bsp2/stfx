@@ -5,16 +5,15 @@
 // ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See 
 // ----          http://www.gnu.org/licenses/licenses.html#LGPL or COPYING for further information.
 // ----
-// ---- info   : a tanh waveshaper that supports per-sample-frame parameter interpolation
+// ---- info   : a cross feedback delay line with variable shape (sweepable multimode) filtering
 // ----
 // ---- created: 25May2020
-// ---- changed: 
+// ---- changed: 31May2020
 // ----
 // ----
 // ----
 
 #include <stdlib.h>
-// #include <stdio.h>
 #include <string.h>
 #include <math.h>
 
@@ -111,7 +110,7 @@ typedef struct dly_flt_2_voice_s {
                               _q
                               );
 
-         flt_1_l.next.lerp(coeff_lpf, coeff_bpf, _shape*2.0f);
+         d.lerp(coeff_lpf, coeff_bpf, _shape*2.0f);
       }
       else
       {
@@ -191,6 +190,8 @@ static void ST_PLUGIN_API loc_note_on(st_plugin_voice_t  *_voice,
    if(!_bGlide)
    {
       memset((void*)voice->mods, 0, sizeof(voice->mods));
+      voice->flt_1_l.reset();
+      voice->flt_1_r.reset();
       voice->dly_l.reset();
       voice->dly_r.reset();
    }
@@ -222,11 +223,6 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
    
    float maxMs = (float(ST_DELAY_SIZE) / 88.200f);    // maxMs @ 88.2kHz = ~371
 
-   // // double modSmooth = shared->params[PARAM_SMOOTH];
-   // // modSmooth  = 1.0 - modSmooth;
-   // // modSmooth *= modSmooth;
-   // // modSmooth *= modSmooth;
-
    float newTime = shared->params[PARAM_TIME] * powf(10.0f, voice->mods[MOD_TIME]);
 
    if(_numFrames > 0u)
@@ -252,11 +248,9 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
    float modFbAmt = powf(10.0f, voice->mods[MOD_FB]);
 
 #define MAX_FB 1.0f
-   // float modFb = (shared->params[PARAM_FB]-0.5f)*2.0f*1.3f * modFbAmt;
    float modFb = shared->params[PARAM_FB] * MAX_FB * modFbAmt;
    modFb = Dstplugin_clamp(modFb, 0.0f, MAX_FB);
 
-   // float modXfb = (shared->params[PARAM_XFB] - 0.5f) * 2.0f * 1.3f * modFbAmt;
    float modXfb = shared->params[PARAM_XFB] * MAX_FB * modFbAmt;
    modXfb = Dstplugin_clamp(modXfb, 0.0f, MAX_FB);
 
@@ -289,8 +283,6 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
    else
    {
       // initial params/modulation (first block, not rendered)
-      // printf("xxx dly_flt_2: first block\n");
-      // fflush(stdout);
       voice->mod_time_l_cur = modTimeL;
       voice->mod_time_l_inc = 0.0f;
       voice->mod_time_r_cur = modTimeR;
@@ -300,19 +292,17 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
       voice->mod_xfb_cur    = modXfb;
       voice->mod_xfb_inc    = 0.0f;
 
-      voice->flt_1_l.reset();
-      voice->flt_1_r.reset();
       voice->calcFltCoeff(voice->flt_1_l.next, modFltShape, modFltFreq, modFltQ);
       voice->flt_1_r.next = voice->flt_1_l.next;
    }
 }
 
-static void ST_PLUGIN_API loc_process_fx_replace(st_plugin_voice_t  *_voice,
-                                                 int                 _bMonoIn,
-                                                 const float        *_samplesIn,
-                                                 float              *_samplesOut, 
-                                                 unsigned int        _numFrames
-                                                 ) {
+static void ST_PLUGIN_API loc_process_replace(st_plugin_voice_t  *_voice,
+                                              int                 _bMonoIn,
+                                              const float        *_samplesIn,
+                                              float              *_samplesOut, 
+                                              unsigned int        _numFrames
+                                              ) {
    // Ring modulate at (modulated) note frequency
    ST_PLUGIN_VOICE_CAST(dly_flt_2_voice_t);
    ST_PLUGIN_VOICE_SHARED_CAST(dly_flt_2_shared_t);
@@ -438,21 +428,21 @@ st_plugin_info_t *dly_flt_2_init(void) {
       ret->base.num_params  = NUM_PARAMS;
       ret->base.num_mods    = NUM_MODS;
 
-      ret->base.shared_new         = &loc_shared_new;
-      ret->base.shared_delete      = &loc_shared_delete;
-      ret->base.voice_new          = &loc_voice_new;
-      ret->base.voice_delete       = &loc_voice_delete;
-      ret->base.get_param_name     = &loc_get_param_name;
-      ret->base.get_param_reset    = &loc_get_param_reset;
-      ret->base.get_param_value    = &loc_get_param_value;
-      ret->base.set_param_value    = &loc_set_param_value;
-      ret->base.get_mod_name       = &loc_get_mod_name;
-      ret->base.set_sample_rate    = &loc_set_sample_rate;
-      ret->base.note_on            = &loc_note_on;
-      ret->base.set_mod_value      = &loc_set_mod_value;
-      ret->base.prepare_block      = &loc_prepare_block;
-      ret->base.process_fx_replace = &loc_process_fx_replace;
-      ret->base.plugin_exit        = &loc_plugin_exit;
+      ret->base.shared_new       = &loc_shared_new;
+      ret->base.shared_delete    = &loc_shared_delete;
+      ret->base.voice_new        = &loc_voice_new;
+      ret->base.voice_delete     = &loc_voice_delete;
+      ret->base.get_param_name   = &loc_get_param_name;
+      ret->base.get_param_reset  = &loc_get_param_reset;
+      ret->base.get_param_value  = &loc_get_param_value;
+      ret->base.set_param_value  = &loc_set_param_value;
+      ret->base.get_mod_name     = &loc_get_mod_name;
+      ret->base.set_sample_rate  = &loc_set_sample_rate;
+      ret->base.note_on          = &loc_note_on;
+      ret->base.set_mod_value    = &loc_set_mod_value;
+      ret->base.prepare_block    = &loc_prepare_block;
+      ret->base.process_replace  = &loc_process_replace;
+      ret->base.plugin_exit      = &loc_plugin_exit;
    }
 
    return &ret->base;

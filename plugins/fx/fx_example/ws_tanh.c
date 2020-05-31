@@ -9,7 +9,7 @@
 // ----
 // ---- created: 10May2009
 // ---- changed: 23May2010, 30Sep2010, 07Oct2010, 17May2020, 18May2020, 19May2020, 20May2020
-// ----          21May2020, 24May2020
+// ----          21May2020, 24May2020, 31May2020
 // ----
 // ----
 // ----
@@ -162,12 +162,12 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
    }
 }
 
-static void ST_PLUGIN_API loc_process_fx_replace(st_plugin_voice_t  *_voice,
-                                                 int                 _bMonoIn,
-                                                 const float        *_samplesIn,
-                                                 float              *_samplesOut, 
-                                                 unsigned int        _numFrames
-                                                 ) {
+static void ST_PLUGIN_API loc_process_replace(st_plugin_voice_t  *_voice,
+                                              int                 _bMonoIn,
+                                              const float        *_samplesIn,
+                                              float              *_samplesOut, 
+                                              unsigned int        _numFrames
+                                              ) {
    // Ring modulate at (modulated) note frequency
    ST_PLUGIN_VOICE_CAST(ws_tanh_voice_t);
    ST_PLUGIN_VOICE_SHARED_CAST(ws_tanh_shared_t);
@@ -266,20 +266,20 @@ st_plugin_info_t *ws_tanh_init(void) {
       ret->base.num_params  = NUM_PARAMS;
       ret->base.num_mods    = NUM_MODS;
 
-      ret->base.shared_new         = &loc_shared_new;
-      ret->base.shared_delete      = &loc_shared_delete;
-      ret->base.voice_new          = &loc_voice_new;
-      ret->base.voice_delete       = &loc_voice_delete;
-      ret->base.get_param_name     = &loc_get_param_name;
-      ret->base.get_param_reset    = &loc_get_param_reset;
-      ret->base.get_param_value    = &loc_get_param_value;
-      ret->base.set_param_value    = &loc_set_param_value;
-      ret->base.get_mod_name       = &loc_get_mod_name;
-      ret->base.note_on            = &loc_note_on;
-      ret->base.set_mod_value      = &loc_set_mod_value;
-      ret->base.prepare_block      = &loc_prepare_block;
-      ret->base.process_fx_replace = &loc_process_fx_replace;
-      ret->base.plugin_exit        = &loc_plugin_exit;
+      ret->base.shared_new       = &loc_shared_new;
+      ret->base.shared_delete    = &loc_shared_delete;
+      ret->base.voice_new        = &loc_voice_new;
+      ret->base.voice_delete     = &loc_voice_delete;
+      ret->base.get_param_name   = &loc_get_param_name;
+      ret->base.get_param_reset  = &loc_get_param_reset;
+      ret->base.get_param_value  = &loc_get_param_value;
+      ret->base.set_param_value  = &loc_set_param_value;
+      ret->base.get_mod_name     = &loc_get_mod_name;
+      ret->base.note_on          = &loc_note_on;
+      ret->base.set_mod_value    = &loc_set_mod_value;
+      ret->base.prepare_block    = &loc_prepare_block;
+      ret->base.process_replace  = &loc_process_replace;
+      ret->base.plugin_exit      = &loc_plugin_exit;
    }
 
    return &ret->base;

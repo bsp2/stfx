@@ -347,19 +347,7 @@ struct st_plugin_info_s {
                                    float               _vel
                                    );
 
-   // Synthesize interleaved stereo data ('block')
-   //  - used for OSC type plugins
-   //  - replaces samples in interleaved stereo buffer 'samplesOut' with new samples
-   //     - 'samplesOut' is uninitialized and must be overwritten by the plugin !
-   //  - this is usually called once per 'block' (1000Hz update rate)
-   //     - block size can be smaller at outer processing block boundaries, though
-   //  - do NOT use multithreading, this is already handled by the host
-   //  - fxn pointer can be NULL if the plugin's OSC flag is not set
-   void (ST_PLUGIN_API *process_osc_replace) (st_plugin_voice_t  *_voice,
-                                              float              *_samplesOut
-                                              );
-
-   // Post-Process interleaved stereo data ('block')
+   // Process interleaved stereo data ('block')
    //  - used for FX type plugins
    //  - replaces samples in buffer 'samplesOut' with new samples
    //  - this is usually called once per 'block' (1000Hz update rate)
@@ -368,17 +356,18 @@ struct st_plugin_info_s {
    //  - 'bMonoIn' is a hint that is set when the (stereo) input buffer is actually mono, i.e. l/r samples are equal
    //     - the plugin may calculate a mono effect and simply copy the left channel output to the right channel,
    //        unless it is a true mono->stereo effect
+   //  - oscillator-type plugins (ST_PLUGIN_FLAG_OSC) may ignore 'samplesIn' and 'bMonoIn'
    //  - 'numFrames' is the number of sample frames to process (=> write (2 * numFrames) samples)
    //  - do NOT use multithreading, this is already handled by the host
    //  - fxn pointer can be NULL if the plugin's FX flag is not set
    //  - freqStartHz is the note frequency at the beginning of the block
    //  - freqStepHz is the note frequency per-sample-frame increment
-   void (ST_PLUGIN_API *process_fx_replace) (st_plugin_voice_t  *_voice,
-                                             int                 _bMonoIn,
-                                             const float        *_samplesIn,
-                                             float              *_samplesOut, 
-                                             unsigned int        _numFrames
-                                             );
+   void (ST_PLUGIN_API *process_replace) (st_plugin_voice_t  *_voice,
+                                          int                 _bMonoIn,
+                                          const float        *_samplesIn,
+                                          float              *_samplesOut, 
+                                          unsigned int        _numFrames
+                                          );
 
    // Exit plugin.
    //  - called after all voice and shared instances have been deleted
@@ -387,7 +376,7 @@ struct st_plugin_info_s {
    void (ST_PLUGIN_API *plugin_exit) (st_plugin_info_t *_info);
    
 
-   void *_future[64 - 30];
+   void *_future[64 - 29];
 };
 
 

@@ -9,7 +9,7 @@
 // ----
 // ---- created: 16May2020
 // ---- changed: 17May2020, 18May2020, 19May2020, 20May2020, 21May2020, 24May2020, 25May2020
-// ----          26May2020
+// ----          26May2020, 31May2020
 // ----
 // ----
 // ----
@@ -60,13 +60,19 @@ ST_PLUGIN_APICALL st_plugin_info_t *ST_PLUGIN_API st_plugin_init(unsigned int _p
       case 33u: return biquad_hsh_2_init     ();
       case 34u: return biquad_hsh_3_init     ();
       case 35u: return biquad_hsh_4_init     ();
-      case 36u: return amp_init              ();
-      case 37u: return pan_init              ();
-      case 38u: return ws_smoothstep_init    ();
-      case 39u: return dly_1_init            ();
-      case 40u: return dly_2_init            ();
-      case 41u: return dly_flt_2_init        ();
-      case 42u: return bitflipper_init       ();
+      case 36u: return biquad_vsf_1_init     ();
+      case 37u: return biquad_vsf_2_init     ();
+      case 38u: return biquad_vsf_3_init     ();
+      case 39u: return biquad_vsf_4_init     ();
+      case 40u: return amp_init              ();
+      case 41u: return pan_init              ();
+      case 42u: return ws_smoothstep_init    ();
+      case 43u: return dly_1_init            ();
+      case 44u: return dly_2_init            ();
+      case 45u: return dly_flt_2_init        ();
+      case 46u: return bitflipper_init       ();
+      case 47u: return clip_init             ();
+      case 48u: return ringmul_init          ();
    }
 
    return NULL;

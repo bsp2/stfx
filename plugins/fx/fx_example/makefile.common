@@ -40,6 +40,10 @@ ALL_OBJ= \
 	biquad_hsh_2.o 	  \
 	biquad_hsh_3.o 	  \
 	biquad_hsh_4.o 	  \
+	biquad_vsf_1.o 	  \
+	biquad_vsf_2.o 	  \
+	biquad_vsf_3.o 	  \
+	biquad_vsf_4.o 	  \
 	amp.o 	           \
 	pan.o 	           \
 	ws_smoothstep.o     \
@@ -47,4 +51,6 @@ ALL_OBJ= \
 	dly_2.o             \
 	dly_flt_2.o         \
 	bitflipper.o        \
+	clip.o              \
+	ringmul.o           \
 	fx_example.o	

@@ -9,7 +9,7 @@
 // ----
 // ---- created: 16May2020
 // ---- changed: 17May2020, 18May2020, 19May2020, 20May2020, 21May2020, 24May2020, 25May2020
-// ----          26May2020
+// ----          26May2020, 31May2020
 // ----
 // ----
 // ----
@@ -51,6 +51,10 @@ extern st_plugin_info_t *biquad_hsh_1_init     (void);
 extern st_plugin_info_t *biquad_hsh_2_init     (void);
 extern st_plugin_info_t *biquad_hsh_3_init     (void);
 extern st_plugin_info_t *biquad_hsh_4_init     (void);
+extern st_plugin_info_t *biquad_vsf_1_init     (void);
+extern st_plugin_info_t *biquad_vsf_2_init     (void);
+extern st_plugin_info_t *biquad_vsf_3_init     (void);
+extern st_plugin_info_t *biquad_vsf_4_init     (void);
 extern st_plugin_info_t *amp_init              (void);
 extern st_plugin_info_t *pan_init              (void);
 extern st_plugin_info_t *ws_smoothstep_init    (void);
@@ -58,3 +62,5 @@ extern st_plugin_info_t *dly_1_init            (void);
 extern st_plugin_info_t *dly_2_init            (void);
 extern st_plugin_info_t *dly_flt_2_init        (void);
 extern st_plugin_info_t *bitflipper_init       (void);
+extern st_plugin_info_t *clip_init             (void);
+extern st_plugin_info_t *ringmul_init          (void);

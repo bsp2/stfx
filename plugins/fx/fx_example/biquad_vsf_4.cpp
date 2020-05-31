@@ -1,14 +1,14 @@
 // ----
-// ---- file   : biquad_lpf_1.cpp
+// ---- file   : biquad_vsf_4.cpp
 // ---- author : Bastian Spiegel <bs@tkscript.de>
 // ---- legal  : (c) 2020 by Bastian Spiegel. 
 // ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See 
 // ----          http://www.gnu.org/licenses/licenses.html#LGPL or COPYING for further information.
 // ----
-// ---- info   : a biquad low pass filter that supports per-sample-frame parameter interpolation
+// ---- info   : a biquad variable shape (sweepable multimode) filter that supports per-sample-frame parameter interpolation
 // ----
-// ---- created: 21May2020
-// ---- changed: 24May2020, 31May2020
+// ---- created: 31May2020
+// ---- changed: 
 // ----
 // ----
 // ----
@@ -22,65 +22,98 @@
 
 #include "biquad.h"
 
+#define NUM_POLES  (4u)
+
 #define PARAM_DRYWET   0
-#define PARAM_DRIVE    1
+#define PARAM_SHAPE    1
 #define PARAM_FREQ     2
 #define PARAM_Q        3
 #define PARAM_PAN      4
 #define NUM_PARAMS     5
 static const char *loc_param_names[NUM_PARAMS] = {
    "Dry / Wet",
-   "Drive",
+   "Shape",
    "Freq",
    "Q",
    "Pan"
 };
 static float loc_param_resets[NUM_PARAMS] = {
    1.0f,  // DRYWET
-   0.5f,  // DRIVE
+   0.5f,  // SHAPE
    1.0f,  // FREQ
    0.0f,  // Q
    0.5f,  // PAN
 };
 
-#define MOD_DRYWET  0
+#define MOD_SHAPE   0
 #define MOD_FREQ    1
 #define MOD_Q       2
 #define MOD_PAN     3
 #define NUM_MODS    4
 static const char *loc_mod_names[NUM_MODS] = {
-   "Dry / Wet",
+   "Shape",
    "Freq",
    "Q",
    "Pan"
 };
 
-typedef struct biquad_lpf_1_info_s {
+typedef struct biquad_vsf_4_info_s {
    st_plugin_info_t base;
-} biquad_lpf_1_info_t;
+} biquad_vsf_4_info_t;
 
-typedef struct biquad_lpf_1_shared_s {
+typedef struct biquad_vsf_4_shared_s {
    st_plugin_shared_t base;
    float params[NUM_PARAMS];
-} biquad_lpf_1_shared_t;
+} biquad_vsf_4_shared_t;
 
-typedef struct biquad_lpf_1_voice_s {
+typedef struct biquad_vsf_4_voice_s {
    st_plugin_voice_t base;
-   float    sample_rate;
-   float    mods[NUM_MODS];
-   float    mod_drywet_cur;
-   float    mod_drywet_inc;
-   float    mod_drive_cur;
-   float    mod_drive_inc;
-   StBiquad lpf_1_l;
-   StBiquad lpf_1_r;
-} biquad_lpf_1_voice_t;
+   float         sample_rate;
+   float         mods[NUM_MODS];
+   float         mod_drywet_cur;
+   float         mod_drywet_inc;
+   StBiquadCoeff coeff_lpf;
+   StBiquadCoeff coeff_bpf;
+   StBiquadCoeff coeff_hpf;
+   StBiquad      flt_l[NUM_POLES];
+   StBiquad      flt_r[NUM_POLES];
+
+   void calcFltCoeff(StBiquadCoeff &d, float _shape, float _freq, float _q) {
+
+      coeff_bpf.calcParams(StBiquad::BPF,
+                           0.0f/*gainDB*/,
+                           _freq,
+                           _q
+                           );
+
+      if(_shape < 0.5f)
+      {
+         coeff_lpf.calcParams(StBiquad::LPF,
+                              0.0f/*gainDB*/,
+                              _freq,
+                              _q
+                              );
+
+         d.lerp(coeff_lpf, coeff_bpf, _shape*2.0f);
+      }
+      else
+      {
+         coeff_hpf.calcParams(StBiquad::HPF,
+                              0.0f/*gainDB*/,
+                              _freq,
+                              _q
+                              );
+
+         d.lerp(coeff_bpf, coeff_hpf, (_shape-0.5f)*2.0f);
+      }
+   }
+} biquad_vsf_4_voice_t;
 
 
 static void ST_PLUGIN_API loc_set_sample_rate(st_plugin_voice_t *_voice,
                                               float              _sampleRate
                                               ) {
-   ST_PLUGIN_VOICE_CAST(biquad_lpf_1_voice_t);
+   ST_PLUGIN_VOICE_CAST(biquad_vsf_4_voice_t);
    voice->sample_rate = _sampleRate;
 }
 
@@ -101,7 +134,7 @@ static float ST_PLUGIN_API loc_get_param_reset(st_plugin_info_t *_info,
 static float ST_PLUGIN_API loc_get_param_value(st_plugin_shared_t *_shared,
                                                unsigned int        _paramIdx
                                                ) {
-   ST_PLUGIN_SHARED_CAST(biquad_lpf_1_shared_t);
+   ST_PLUGIN_SHARED_CAST(biquad_vsf_4_shared_t);
    return shared->params[_paramIdx];
 }
 
@@ -109,7 +142,7 @@ static void ST_PLUGIN_API loc_set_param_value(st_plugin_shared_t *_shared,
                                               unsigned int        _paramIdx,
                                               float               _value
                                               ) {
-   ST_PLUGIN_SHARED_CAST(biquad_lpf_1_shared_t);
+   ST_PLUGIN_SHARED_CAST(biquad_vsf_4_shared_t);
    shared->params[_paramIdx] = _value;
 }
 
@@ -128,7 +161,7 @@ static void ST_PLUGIN_API loc_note_on(st_plugin_voice_t  *_voice,
                                       float               _noteHz,
                                       float               _vel
                                       ) {
-   ST_PLUGIN_VOICE_CAST(biquad_lpf_1_voice_t);
+   ST_PLUGIN_VOICE_CAST(biquad_vsf_4_voice_t);
    (void)_bGlide;
    (void)_voiceIdx;
    (void)_activeNoteIdx;
@@ -139,8 +172,11 @@ static void ST_PLUGIN_API loc_note_on(st_plugin_voice_t  *_voice,
    {
       memset((void*)voice->mods, 0, sizeof(voice->mods));
 
-      voice->lpf_1_l.reset();
-      voice->lpf_1_r.reset();
+      for(unsigned int i = 0u; i < NUM_POLES; i++)
+      {
+         voice->flt_l[i].reset();
+         voice->flt_r[i].reset();
+      }
    }
 }
 
@@ -149,7 +185,7 @@ static void ST_PLUGIN_API loc_set_mod_value(st_plugin_voice_t *_voice,
                                             float              _value,
                                             unsigned           _frameOffset
                                             ) {
-   ST_PLUGIN_VOICE_CAST(biquad_lpf_1_voice_t);
+   ST_PLUGIN_VOICE_CAST(biquad_vsf_4_voice_t);
    (void)_frameOffset;
    voice->mods[_modIdx] = _value;
 }
@@ -161,18 +197,18 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
                                             float              _vol,
                                             float              _pan
                                             ) {
-   ST_PLUGIN_VOICE_CAST(biquad_lpf_1_voice_t);
-   ST_PLUGIN_VOICE_SHARED_CAST(biquad_lpf_1_shared_t);
+   ST_PLUGIN_VOICE_CAST(biquad_vsf_4_voice_t);
+   ST_PLUGIN_VOICE_SHARED_CAST(biquad_vsf_4_shared_t);
    (void)_freqHz;
    (void)_note;
    (void)_vol;
    (void)_pan;
 
-   float modDryWet = shared->params[PARAM_DRYWET]   + voice->mods[MOD_DRYWET];
+   float modDryWet = shared->params[PARAM_DRYWET];
    modDryWet = Dstplugin_clamp(modDryWet, 0.0f, 1.0f);
 
-   float modDrive = ((shared->params[PARAM_DRIVE] - 0.5f) * 2.0f);
-   modDrive = powf(10.0f, modDrive * 2.0f);
+   float modShape = shared->params[PARAM_SHAPE] + voice->mods[MOD_SHAPE];
+   modShape = Dstplugin_clamp(modShape, 0.0f, 1.0f);
 
    float modFreq = shared->params[PARAM_FREQ] + voice->mods[MOD_FREQ];
    float modPan  = ((shared->params[PARAM_PAN] - 0.5f) * 2.0f) + voice->mods[MOD_PAN];
@@ -191,32 +227,30 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
       // lerp
       float recBlockSize = (1.0f / _numFrames);
       voice->mod_drywet_inc = (modDryWet - voice->mod_drywet_cur) * recBlockSize;
-      voice->mod_drive_inc  = (modDrive  - voice->mod_drive_cur)  * recBlockSize;
+
+      for(unsigned int i = 0u; i < NUM_POLES; i++)
+      {
+         voice->flt_l[i].shuffleCoeff();
+         voice->flt_r[i].shuffleCoeff();
+         voice->calcFltCoeff(voice->flt_l[i].next, modShape, modFreqL, modQ);
+         voice->calcFltCoeff(voice->flt_r[i].next, modShape, modFreqR, modQ);
+         voice->flt_l[i].calcStep(_numFrames);
+         voice->flt_r[i].calcStep(_numFrames);
+      }
    }
    else
    {
       // initial params/modulation (first block, not rendered)
       voice->mod_drywet_cur = modDryWet;
       voice->mod_drywet_inc = 0.0f;
-      voice->mod_drive_cur  = modDrive;
-      voice->mod_drive_inc  = 0.0f;
 
-      _numFrames = 1u;
+      for(unsigned int i = 0u; i < NUM_POLES; i++)
+      {
+         voice->calcFltCoeff(voice->flt_l[i].next, modShape, modFreqL, modQ);
+         voice->calcFltCoeff(voice->flt_r[i].next, modShape, modFreqR, modQ);
+      }
    }
 
-   voice->lpf_1_l.calcParams(_numFrames,
-                             StBiquad::LPF,
-                             0.0f/*gainDB*/,
-                             modFreqL,
-                             modQ
-                             );
-
-   voice->lpf_1_r.calcParams(_numFrames,
-                             StBiquad::LPF,
-                             0.0f/*gainDB*/,
-                             modFreqR,
-                             modQ
-                             );
 }
 
 static void ST_PLUGIN_API loc_process_replace(st_plugin_voice_t  *_voice,
@@ -226,8 +260,8 @@ static void ST_PLUGIN_API loc_process_replace(st_plugin_voice_t  *_voice,
                                               unsigned int        _numFrames
                                               ) {
    // Ring modulate at (modulated) note frequency
-   ST_PLUGIN_VOICE_CAST(biquad_lpf_1_voice_t);
-   ST_PLUGIN_VOICE_SHARED_CAST(biquad_lpf_1_shared_t);
+   ST_PLUGIN_VOICE_CAST(biquad_vsf_4_voice_t);
+   ST_PLUGIN_VOICE_SHARED_CAST(biquad_vsf_4_shared_t);
 
    unsigned int k = 0u;
 
@@ -236,8 +270,13 @@ static void ST_PLUGIN_API loc_process_replace(st_plugin_voice_t  *_voice,
    {
       float l = _samplesIn[k];
       float r = _samplesIn[k + 1u];
-      float outL = voice->lpf_1_l.filter(l * voice->mod_drive_cur);
-      float outR = voice->lpf_1_r.filter(r * voice->mod_drive_cur);
+      float outL = l;
+      float outR = r;
+      for(unsigned int i = 0u; i < NUM_POLES; i++)
+      {
+         outL = voice->flt_l[i].filter(outL);
+         outR = voice->flt_r[i].filter(outR);
+      }
       outL = l + (outL - l) * voice->mod_drywet_cur;
       outR = r + (outR - r) * voice->mod_drywet_cur;
       _samplesOut[k]      = outL;
@@ -246,13 +285,12 @@ static void ST_PLUGIN_API loc_process_replace(st_plugin_voice_t  *_voice,
       // Next frame
       k += 2u;
       voice->mod_drywet_cur += voice->mod_drywet_inc;
-      voice->mod_drive_cur  += voice->mod_drive_inc;
    }
 
 }
 
 static st_plugin_shared_t *ST_PLUGIN_API loc_shared_new(st_plugin_info_t *_info) {
-   biquad_lpf_1_shared_t *ret = (biquad_lpf_1_shared_t *)malloc(sizeof(biquad_lpf_1_shared_t));
+   biquad_vsf_4_shared_t *ret = (biquad_vsf_4_shared_t *)malloc(sizeof(biquad_vsf_4_shared_t));
    if(NULL != ret)
    {
       memset((void*)ret, 0, sizeof(*ret));
@@ -267,7 +305,7 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
 }
 
 static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
-   biquad_lpf_1_voice_t *ret = (biquad_lpf_1_voice_t *)malloc(sizeof(biquad_lpf_1_voice_t));
+   biquad_vsf_4_voice_t *ret = (biquad_vsf_4_voice_t *)malloc(sizeof(biquad_vsf_4_voice_t));
    if(NULL != ret)
    {
       memset((void*)ret, 0, sizeof(*ret));
@@ -285,20 +323,20 @@ static void ST_PLUGIN_API loc_plugin_exit(st_plugin_info_t *_info) {
 }
 
 extern "C" {
-st_plugin_info_t *biquad_lpf_1_init(void) {
-   biquad_lpf_1_info_t *ret = NULL;
+st_plugin_info_t *biquad_vsf_4_init(void) {
+   biquad_vsf_4_info_t *ret = NULL;
 
-   ret = (biquad_lpf_1_info_t *)malloc(sizeof(biquad_lpf_1_info_t));
+   ret = (biquad_vsf_4_info_t *)malloc(sizeof(biquad_vsf_4_info_t));
 
    if(NULL != ret)
    {
       memset((void*)ret, 0, sizeof(*ret));
 
       ret->base.api_version = ST_PLUGIN_API_VERSION;
-      ret->base.id          = "bsp biquad lpf 1";  // unique id. don't change this in future builds.
+      ret->base.id          = "bsp biquad vsf 4";  // unique id. don't change this in future builds.
       ret->base.author      = "bsp";
-      ret->base.name        = "biquad low pass filter 1";
-      ret->base.short_name  = "bq lpf 1";
+      ret->base.name        = "biquad variable shape filter 4";
+      ret->base.short_name  = "bq vsf 4";
       ret->base.flags       = ST_PLUGIN_FLAG_FX | ST_PLUGIN_FLAG_TRUE_STEREO_OUT;
       ret->base.category    = ST_PLUGIN_CAT_FILTER;
       ret->base.num_params  = NUM_PARAMS;
