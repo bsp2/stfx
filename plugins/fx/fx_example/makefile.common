@@ -11,6 +11,7 @@ ALL_OBJ= \
 	ws_fm.o  	 		  \
 	resample_nearest.o  \
 	resample_linear.o   \
+	resample_tuned.o    \
 	biquad.o 			  \
 	biquad_lpf_1.o 	  \
 	biquad_lpf_2.o 	  \
@@ -53,4 +54,5 @@ ALL_OBJ= \
 	bitflipper.o        \
 	clip.o              \
 	ringmul.o           \
+	tuned_fb.o          \
 	fx_example.o	

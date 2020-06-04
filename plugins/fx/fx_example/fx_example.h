@@ -9,7 +9,7 @@
 // ----
 // ---- created: 16May2020
 // ---- changed: 17May2020, 18May2020, 19May2020, 20May2020, 21May2020, 24May2020, 25May2020
-// ----          26May2020, 31May2020
+// ----          26May2020, 31May2020, 01Jun2020, 02Jun2020
 // ----
 // ----
 // ----
@@ -23,6 +23,7 @@ extern st_plugin_info_t *ws_exp_init           (void);
 extern st_plugin_info_t *ws_fm_init            (void);
 extern st_plugin_info_t *resample_nearest_init (void);
 extern st_plugin_info_t *resample_linear_init  (void);
+extern st_plugin_info_t *resample_tuned_init   (void);
 extern st_plugin_info_t *biquad_lpf_1_init     (void);
 extern st_plugin_info_t *biquad_lpf_2_init     (void);
 extern st_plugin_info_t *biquad_lpf_3_init     (void);
@@ -64,3 +65,4 @@ extern st_plugin_info_t *dly_flt_2_init        (void);
 extern st_plugin_info_t *bitflipper_init       (void);
 extern st_plugin_info_t *clip_init             (void);
 extern st_plugin_info_t *ringmul_init          (void);
+extern st_plugin_info_t *tuned_fb_init         (void);
