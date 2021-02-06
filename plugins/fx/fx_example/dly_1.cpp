@@ -8,12 +8,13 @@
 // ---- info   : a simple delay line
 // ----
 // ---- created: 24May2020
-// ---- changed: 25May2020, 31May2020
+// ---- changed: 25May2020, 31May2020, 08Jun2020
 // ----
 // ----
 // ----
 
 #include <stdlib.h>
+// // #include <stdio.h>  // debug
 #include <string.h>
 #include <math.h>
 
@@ -122,18 +123,12 @@ static const char *ST_PLUGIN_API loc_get_mod_name(st_plugin_info_t *_info,
 
 static void ST_PLUGIN_API loc_note_on(st_plugin_voice_t  *_voice,
                                       int                 _bGlide,
-                                      unsigned int        _voiceIdx,
-                                      unsigned int        _activeNoteIdx,
                                       unsigned char       _note,
-                                      float               _noteHz,
                                       float               _vel
                                       ) {
    ST_PLUGIN_VOICE_CAST(dly_1_voice_t);
    (void)_bGlide;
-   (void)_voiceIdx;
-   (void)_activeNoteIdx;
    (void)_note;
-   (void)_noteHz;
    (void)_vel;
    if(!_bGlide)
    {
@@ -162,6 +157,9 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
                                             ) {
    ST_PLUGIN_VOICE_CAST(dly_1_voice_t);
    ST_PLUGIN_VOICE_SHARED_CAST(dly_1_shared_t);
+   // // printf("xxx dly_1::prepare_block: voice=%p shared=%p\n", voice, shared);
+   // // fflush(stdout);
+   // // return;//xxxx
    (void)_freqHz;
    (void)_note;
    (void)_vol;

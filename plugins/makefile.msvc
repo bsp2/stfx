@@ -1,0 +1,30 @@
+
+NUM_JOBS:=10
+
+.PHONY: clean
+clean:
+	make -j$(NUM_JOBS) -C fx/fx_example          -f makefile.msvc clean
+	make -j$(NUM_JOBS) -C fx/je_ringmod          -f makefile.msvc clean
+	make -j$(NUM_JOBS) -C fx/je_wavefolder       -f makefile.msvc clean
+	make -j$(NUM_JOBS) -C fx/lindenberg_research -f makefile.msvc clean
+	make -j$(NUM_JOBS) -C fx/obxd_vcf            -f makefile.msvc clean
+	make -j$(NUM_JOBS) -C fx/sql_bootyshifter    -f makefile.msvc clean
+
+.PHONY: bin
+bin:
+	make -j$(NUM_JOBS) -C fx/fx_example          -f makefile.msvc bin
+	make -j$(NUM_JOBS) -C fx/je_ringmod          -f makefile.msvc bin
+	make -j$(NUM_JOBS) -C fx/je_wavefolder       -f makefile.msvc bin
+	make -j$(NUM_JOBS) -C fx/lindenberg_research -f makefile.msvc bin
+	make -j$(NUM_JOBS) -C fx/obxd_vcf            -f makefile.msvc bin
+	make -j$(NUM_JOBS) -C fx/sql_bootyshifter    -f makefile.msvc bin
+
+.PHONY: install
+install:
+	make -j$(NUM_JOBS) -C fx/fx_example          -f makefile.msvc install
+	make -j$(NUM_JOBS) -C fx/je_ringmod          -f makefile.msvc install
+	make -j$(NUM_JOBS) -C fx/je_wavefolder       -f makefile.msvc install
+	make -j$(NUM_JOBS) -C fx/lindenberg_research -f makefile.msvc install
+	make -j$(NUM_JOBS) -C fx/obxd_vcf            -f makefile.msvc install
+	make -j$(NUM_JOBS) -C fx/sql_bootyshifter    -f makefile.msvc install
+

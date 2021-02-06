@@ -1,0 +1,18 @@
+
+TARGET=lindenberg_research
+TARGET_DIR := $(TARGET_DIR)/fx
+
+CPPFLAGS +=
+
+ALL_OBJ= \
+   dsp/DSPMath.o \
+	dsp/DiodeLadder.o \
+	dsp/LadderFilter.o \
+	dsp/MS20zdf.o \
+	dsp/Type35Filter.o \
+	lrt_alma.o \
+	lrt_laika.o \
+	lrt_valerie.o \
+	lrt_vampyr.o \
+	lindenberg_research.o
+

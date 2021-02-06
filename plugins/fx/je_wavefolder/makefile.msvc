@@ -1,0 +1,8 @@
+
+include ../../plugin_pre_msvc.mk
+
+CPPFLAGS+= -EHsc
+
+include makefile.common
+
+include ../../plugin_post_msvc.mk

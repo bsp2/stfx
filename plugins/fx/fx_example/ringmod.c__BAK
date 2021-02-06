@@ -1,0 +1,283 @@
+// ----
+// ---- file   : ringmod.c
+// ---- author : Bastian Spiegel <bs@tkscript.de>
+// ---- legal  : (c) 2020 by Bastian Spiegel. 
+// ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See 
+// ----          http://www.gnu.org/licenses/licenses.html#LGPL or COPYING for further information.
+// ----
+// ---- info   : a ring modulator that tracks the current voice pitch (tksampler voice plugin FX example)
+// ----
+// ---- created: 16May2020
+// ---- changed: 17May2020, 18May2020, 19May2020
+// ----
+// ----
+// ----
+
+#include <stdlib.h>
+#include <math.h>
+
+#include "../../../plugin.h"
+
+#define MOD_DRYWET    0
+#define MOD_FREQ_MUL  1
+#define NUM_MODS      2
+
+#define PARAM_DRYWET     0
+#define PARAM_FREQ_MUL   1
+#define PARAM_FREQ_MIN   2
+#define PARAM_FREQ_MAX   3
+#define NUM_PARAMS       4
+
+
+typedef struct fx_example_info_s {
+   st_plugin_info_t base;
+} fx_example_info_t;
+
+typedef struct fx_example_shared_s {
+   st_plugin_shared_t base;
+   float params[NUM_PARAMS];
+} fx_example_shared_t;
+
+typedef struct fx_example_voice_s {
+   st_plugin_voice_t base;
+   float phase;  // wrap-around in 0..1 range
+   float sample_rate;
+   float mods[NUM_MODS];
+} fx_example_voice_t;
+
+
+static float loc_bipolar_to_scale(float _t, float _mul, float _div) {
+   // t (0..1) => /_div .. *_mul   (0.5 = *1.0)
+   if(_t < 0.0f)
+      _t = 0.0f;
+   else if(_t > 1.0f)
+      _t = 1.0f;
+   float s;
+   if(_t < 0.5f)
+   {
+      s = (1.0f / _div);
+      s = s + ( (1.0f - s) * (_t / 0.5f) );
+   }
+   else
+   {
+      s = 1.0f + ((_t - 0.5f) / (0.5f / (_mul - 1.0f)));
+   }
+   return s;
+}
+
+
+static void ST_PLUGIN_API loc_set_sample_rate(st_plugin_voice_t *_voice,
+                                              float              _sampleRate
+                                              ) {
+   ST_PLUGIN_VOICE_CAST(fx_example_voice_t);
+   voice->sample_rate = _sampleRate;
+}
+
+static const char *ST_PLUGIN_API loc_get_param_name(st_plugin_info_t *_info,
+                                                    unsigned int      _paramIdx
+                                                    ) {
+   (void)_info;
+   switch(_paramIdx)
+   {
+      default:
+         break;
+
+      case PARAM_DRYWET:    return "Dry / Wet";
+      case PARAM_FREQ_MUL:  return "Freq Mul";
+      case PARAM_FREQ_MIN:  return "Freq Min";
+      case PARAM_FREQ_MAX:  return "Freq Max";
+   }
+   return NULL;
+}
+
+static float ST_PLUGIN_API loc_get_param_value(st_plugin_shared_t *_shared,
+                                               unsigned int        _paramIdx
+                                               ) {
+   ST_PLUGIN_SHARED_CAST(fx_example_shared_t);
+   return shared->params[_paramIdx];
+}
+
+static void ST_PLUGIN_API loc_set_param_value(st_plugin_shared_t *_shared,
+                                              unsigned int        _paramIdx,
+                                              float               _value
+                                              ) {
+   ST_PLUGIN_SHARED_CAST(fx_example_shared_t);
+   shared->params[_paramIdx] = _value;
+}
+
+static const char *ST_PLUGIN_API loc_get_mod_name(st_plugin_info_t *_info,
+                                                  unsigned int      _modIdx
+                                                  ) {
+   (void)_info;
+   switch(_modIdx)
+   {
+      default:
+         break;
+
+      case MOD_DRYWET:   return "Dry / Wet";
+      case MOD_FREQ_MUL: return "Freq Mul";
+   }
+   return NULL;
+}
+
+void ST_PLUGIN_API loc_set_mod_value(st_plugin_voice_t *_voice,
+                                     unsigned int       _modIdx,
+                                     float              _value
+                                     ) {
+   ST_PLUGIN_VOICE_CAST(fx_example_voice_t);
+   if(_modIdx < NUM_MODS)
+   {
+      voice->mods[_modIdx] = _value;
+   }
+}
+
+static void ST_PLUGIN_API loc_process_fx_replace(st_plugin_voice_t  *_voice,
+                                                 int                 _bMonoIn,
+                                                 const float        *_samplesIn,
+                                                 float              *_samplesOut, 
+                                                 unsigned int        _numFrames,
+                                                 float               _freqStartHz,
+                                                 float               _freqStepHz
+                                                 ) {
+   // Ring modulate at (modulated) note frequency
+   ST_PLUGIN_VOICE_CAST(fx_example_voice_t);
+   ST_PLUGIN_VOICE_SHARED_CAST(fx_example_shared_t);
+
+   float modDryWet = shared->params[PARAM_DRYWET]   + voice->mods[MOD_DRYWET];
+   float modFreq   = shared->params[PARAM_FREQ_MUL] + voice->mods[MOD_FREQ_MUL];
+   modFreq = loc_bipolar_to_scale(modFreq, 4.0f, 4.0f);  // 0..1 => 0.25..4.0  (0.5=>1.0)
+
+   float freqMin = shared->params[PARAM_FREQ_MIN];
+   freqMin *= freqMin;
+   freqMin *= freqMin;
+   freqMin = (freqMin * 20000.0f) + 10.0f;
+
+   float freqMax = shared->params[PARAM_FREQ_MAX];
+   freqMax *= freqMax;
+   freqMax *= freqMax;
+   freqMax = (freqMax * 20000.0f) + 10.0f;
+
+   float freqStartHz = freqMin + ((freqStartHz-10.0f) / 20000.0f) * (freqMax - freqMin);
+   freqStartHz *= modFreq;
+
+   float freqRatio = freqStartHz / _freqStartHz;
+   float freqStepHz = _freqStepHz * freqRatio;
+
+   float freq     = freqStartHz / voice->sample_rate;
+   float freqStep = freqStepHz / voice->sample_rate;
+   float phase    = voice->phase;
+   unsigned int k = 0u;
+
+   modFreq = (3.14159265359f * 2.0f);
+
+   if(_bMonoIn)
+   {
+      // Mono input, stereo output
+      for(unsigned int i = 0u; i< _numFrames; i++)
+      {
+         float l = _samplesIn[k];
+         float a = sinf(phase * modFreq) * 0.5f + 0.5f;
+         float out = l * (1.0f + (a - 1.0f) * modDryWet);
+         _samplesOut[k]      = out;
+         _samplesOut[k + 1u] = out;
+         k += 2u;
+         phase += freq;
+         freq += freqStep;
+      }
+   }
+   else
+   {
+      // Stereo input, stereo output
+      for(unsigned int i = 0u; i< _numFrames; i++)
+      {
+         float l = _samplesIn[k];
+         float r = _samplesIn[k + 1u];
+         float a = sinf(phase * modFreq) * 0.5f + 0.5f;
+         float outL = l * (1.0f + (a - 1.0f) * modDryWet);
+         float outR = r * (1.0f + (a - 1.0f) * modDryWet);
+         _samplesOut[k]      = outL;
+         _samplesOut[k + 1u] = outR;
+         k += 2u;
+         phase += freq;
+         freq += freqStep;
+      }
+   }
+   if(phase >= 1.0f)
+      phase -= 1.0f;
+   voice->phase = phase;
+}
+
+static st_plugin_shared_t *ST_PLUGIN_API loc_shared_new(st_plugin_info_t *_info) {
+   fx_example_shared_t *ret = malloc(sizeof(fx_example_shared_t));
+   if(NULL != ret)
+   {
+      memset(ret, 0, sizeof(*ret));
+      ret->base.info  = _info;
+      ret->params[PARAM_DRYWET]   = 1.0f;
+      ret->params[PARAM_FREQ_MUL] = 0.5f;
+      ret->params[PARAM_FREQ_MIN] = 0.0f;
+      ret->params[PARAM_FREQ_MAX] = 1.0f;
+   }
+   return &ret->base;
+}
+
+static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
+   free(_shared);
+}
+
+static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
+   fx_example_voice_t *ret = malloc(sizeof(fx_example_voice_t));
+   if(NULL != ret)
+   {
+      memset(ret, 0, sizeof(*ret));
+      ret->base.info   = _info;
+      ret->phase = 0.0f;
+   }
+   return &ret->base;
+}
+
+static void ST_PLUGIN_API loc_voice_delete(st_plugin_voice_t *_voice) {
+   free(_voice);
+}
+
+static void ST_PLUGIN_API loc_plugin_exit(st_plugin_info_t *_info) {
+   free(_info);
+}
+
+st_plugin_info_t *ringmod_init(void) {
+   fx_example_info_t *ret = NULL;
+
+   ret = malloc(sizeof(fx_example_info_t));
+
+   if(NULL != ret)
+   {
+      memset(ret, 0, sizeof(*ret));
+
+      ret->base.api_version = ST_PLUGIN_API_VERSION;
+      ret->base.id          = "bsp ring_mod example 1";  // unique id. don't change this in future builds.
+      ret->base.author      = "bsp";
+      ret->base.name        = "Ring Modulator (fx_example)";
+      ret->base.short_name  = "Ring Mod";
+      ret->base.flags       = ST_PLUGIN_FLAG_FX;
+      ret->base.num_params  = NUM_PARAMS;
+      ret->base.num_mods    = NUM_MODS;
+
+      ret->base.shared_new         = &loc_shared_new;
+      ret->base.shared_delete      = &loc_shared_delete;
+      ret->base.voice_new          = &loc_voice_new;
+      ret->base.voice_delete       = &loc_voice_delete;
+      ret->base.set_sample_rate    = &loc_set_sample_rate;
+      ret->base.get_param_name     = &loc_get_param_name;
+      ret->base.get_param_value    = &loc_get_param_value;
+      ret->base.set_param_value    = &loc_set_param_value;
+      ret->base.get_mod_name       = &loc_get_mod_name;
+      ret->base.set_mod_value      = &loc_set_mod_value;
+      ret->base.process_fx_replace = &loc_process_fx_replace;
+      ret->base.plugin_exit        = &loc_plugin_exit;
+   }
+
+   return &ret->base;
+}
+
+
+

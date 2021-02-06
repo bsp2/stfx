@@ -10,6 +10,7 @@
 // ----
 // ---- created: 10May2009
 // ---- changed: 23May2010, 30Sep2010, 07Oct2010, 20May2020, 21May2020, 24May2020, 31May2020
+// ----          08Jun2020
 // ----
 // ----
 // ----
@@ -104,18 +105,12 @@ static const char *ST_PLUGIN_API loc_get_mod_name(st_plugin_info_t *_info,
 
 static void ST_PLUGIN_API loc_note_on(st_plugin_voice_t  *_voice,
                                       int                 _bGlide,
-                                      unsigned int        _voiceIdx,
-                                      unsigned int        _activeNoteIdx,
                                       unsigned char       _note,
-                                      float               _noteHz,
                                       float               _vel
                                       ) {
    ST_PLUGIN_VOICE_CAST(ws_exp_voice_t);
    (void)_bGlide;
-   (void)_voiceIdx;
-   (void)_activeNoteIdx;
    (void)_note;
-   (void)_noteHz;
    (void)_vel;
    if(!_bGlide)
    {

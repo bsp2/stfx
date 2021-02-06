@@ -8,7 +8,7 @@
 // ---- info   : a sine / FM waveshaper that supports per-sample-frame parameter interpolation
 // ----
 // ---- created: 20May2020
-// ---- changed: 21May2020, 24May2020, 31May2020
+// ---- changed: 21May2020, 24May2020, 31May2020, 08Jun2020
 // ----
 // ----
 // ----
@@ -199,18 +199,12 @@ static void ST_PLUGIN_API loc_set_sample_rate(st_plugin_voice_t *_voice,
 
 static void ST_PLUGIN_API loc_note_on(st_plugin_voice_t  *_voice,
                                       int                 _bGlide,
-                                      unsigned int        _voiceIdx,
-                                      unsigned int        _activeNoteIdx,
                                       unsigned char       _note,
-                                      float               _noteHz,
                                       float               _vel
                                       ) {
    ST_PLUGIN_VOICE_CAST(ws_fm_voice_t);
    (void)_bGlide;
-   (void)_voiceIdx;
-   (void)_activeNoteIdx;
    (void)_note;
-   (void)_noteHz;
    (void)_vel;
    if(!_bGlide)
    {

@@ -22,7 +22,8 @@
 // ---- info   : A simple "C"-linkage voice plugin interface
 // ----
 // ---- created: 16May2020
-// ---- changed: 17May2020, 18May2020, 19May2020, 20May2020, 24May2020
+// ---- changed: 17May2020, 18May2020, 19May2020, 20May2020, 24May2020, 31May2020, 06Jun2020
+// ----          08Jun2020
 // ----
 // ----
 // ----
@@ -80,8 +81,11 @@ typedef void *st_sampleplayer_handle_t;
 //         (note) when unset, stereo output is actually mono (l=r) when input is mono
 #define ST_PLUGIN_FLAG_TRUE_STEREO_OUT  (1u << 2)
 
-// set_mod_value() update rate (Hz)
-#define ST_PLUGIN_MOD_RATE  (1000)
+// flags: plugin supports voicebus cross modulation
+#define ST_PLUGIN_FLAG_XMOD             (1u << 3)
+
+// Maximum number of layers / voice buses
+#define ST_PLUGIN_MAX_LAYERS  (32u)
 
 // Plugin categories
 #define ST_PLUGIN_CAT_UNKNOWN     (1u <<  0)
@@ -104,6 +108,9 @@ typedef void *st_sampleplayer_handle_t;
 #define ST_PLUGIN_CAT_REVERB      (1u << 17)
 #define ST_PLUGIN_CAT_TRANSIENT   (1u << 18)
 #define ST_PLUGIN_CAT_CONVOLVER   (1u << 19)
+#define ST_PLUGIN_CAT_MIXER       (1u << 20)
+#define ST_PLUGIN_CAT_COMPARATOR  (1u << 21)
+#define ST_PLUGIN_CAT_UTILITY     (1u << 22)
 
 
 //
@@ -163,7 +170,7 @@ struct st_plugin_info_s {
    unsigned int num_params;
 
    // Number of modulation destinations
-   //  - up to 4 (at the moment)
+   //  - up to 8 (at the moment)
    //  - can be targeted in the voice mod matrix
    unsigned int num_mods;
 
@@ -225,8 +232,7 @@ struct st_plugin_info_s {
    //  - length should not exceed 16 chars
    //  - do NOT allocate new memory here !
    //  - fxn pointer can be NULL if the plugin has no parameters
-   //  - the first param should be "Dry / Wet"
-   //  - the second param should be "Drive"  (important for parallel effect routings)
+   //  - the first param should be "Dry / Wet" (not a requirement, though)
    const char *(ST_PLUGIN_API *get_param_name) (st_plugin_info_t *_info,
                                                 unsigned int      _paramIdx
                                                 );
@@ -320,26 +326,22 @@ struct st_plugin_info_s {
    // Handle note-on
    //  - 'bGlide' is true when voice portamento / glissando is active
    //     - plugin may skip state reset when glide is active
-   //  - 'voiceIdx' is in the range 0..(polyphony-1) (see set_sampleplayer())
-   //  - 'activeNoteIdx' is the range 0..(num_currently_pressed_keys-1)
    //  - 'note' is the MIDI note number (0..127)
-   //  - 'noteHz' is the unmodulated note frequency in Hz (according to current frequency table)
-   //  - 'vel' is normalized velocity (0..1)
+   //  - 'vel' is the normalized velocity (0..1)
+   //  - (note) additional info can be read from the voice base struct (layer_idx etc)
    //  - fxn pointer can be NULL if the plugin is not interested in note ons
    //     - NOTE: if the plugin has mods it's usually a good idea to reset them during note_on() !
    //  - called in the same thread context as the process*() callbacks
    void (ST_PLUGIN_API *note_on) (st_plugin_voice_t  *_voice,
                                   int                 _bGlide,
-                                  unsigned int        _voiceIdx,
-                                  unsigned int        _activeNoteIdx,
                                   unsigned char       _note,
-                                  float               _noteHz,
                                   float               _vel
                                   );
 
    // Handle note-off
    //  - note is the MIDI note number (0..127)
-   //  - vel is normalized velocity (0..1)
+   //     (the same note that was passed to note_on())
+   //  - vel is the normalized release velocity (0..1)
    //  - fxn pointer can be NULL if the plugin is not interested in note offs
    //  - called in the same thread context as the process*() callbacks
    void (ST_PLUGIN_API *note_off) (st_plugin_voice_t  *_voice,
@@ -417,7 +419,32 @@ typedef struct st_plugin_voice_s {
    //  - set by host when voice is started
    st_plugin_shared_t *shared;
 
-   void *_future[16 - 2];
+   // updated immediately before prepare_block()
+   //  - indexed by voice bus index (0..ST_PLUGIN_MAX_LAYERS-1)
+   //  - each array element points to an array of interleaved stereo float samples
+   //  - used for cross-zone modulation (e.g. ring modulate layers 1+2)
+   float        **voice_bus_buffers;
+   unsigned int   voice_bus_read_offset;  // #samples (_not_ frames)
+
+   // valid at note_on()
+   //  - stores the idx in a group of simultaneously triggered (layered) zones/layers (0..ST_PLUGIN_MAX_LAYERS-1)
+   //  - can be used to determine the current or previous voice_bus index (when the layer output bus is set to 'cur')
+   unsigned int layer_idx;
+
+   // valid at note_on()
+   //  - in the range 0..(polyphony-1) (see set_sampleplayer())
+   unsigned int voice_idx;
+
+   // valid at note_on()
+   //  - in the range 0..(num_currently_pressed_keys-1)
+   unsigned int active_note_idx;
+
+   // valid at note_on()
+   //  - 'noteHz' is the unmodulated note frequency in Hz (according to current frequency table)
+   //  - (note) the actual, modulated note frequency is passed to the prepare_block() function
+   float note_hz;
+
+   void *_future[16 - 8];
 
 } st_plugin_voice_t;
 
@@ -435,7 +462,7 @@ typedef st_plugin_info_t *(*ST_PLUGIN_API st_plugin_init_fxn_t) (unsigned int _p
 //
 #define ST_PLUGIN_SHARED_CAST(a) a *shared = (a*)_shared
 #define ST_PLUGIN_VOICE_CAST(a) a *voice = (a*)_voice
-#define ST_PLUGIN_VOICE_INFO_CAST(a) a *shared = (a*)_voice->info
+#define ST_PLUGIN_VOICE_INFO_CAST(a) a *info = (a*)_voice->shared->info
 #define ST_PLUGIN_VOICE_SHARED_CAST(a) a *shared = (a*)_voice->shared
 
 // Clip value to min/max range
@@ -462,6 +489,7 @@ typedef st_plugin_info_t *(*ST_PLUGIN_API st_plugin_init_fxn_t) (unsigned int _p
 #define ST_PLUGIN_PI4   (ST_PLUGIN_PI / 4.0)
 #define ST_PLUGIN_LN2   0.6931471805599453094172321214581766
 #define ST_PLUGIN_LN10  2.3025850929940456840179914546843642
+#define ST_PLUGIN_E     2.7182818284590452353602874713526625
 
 #define ST_PLUGIN_PI_F    ((float)ST_PLUGIN_PI)
 #define ST_PLUGIN_2PI_F   ((float)ST_PLUGIN_2PI)
@@ -469,6 +497,23 @@ typedef st_plugin_info_t *(*ST_PLUGIN_API st_plugin_init_fxn_t) (unsigned int _p
 #define ST_PLUGIN_PI4_F   ((float)ST_PLUGIN_PI4)
 #define ST_PLUGIN_LN2_F   ((float)ST_PLUGIN_LN2)
 #define ST_PLUGIN_LN10_F  ((float)ST_PLUGIN_LN10)
+#define ST_PLUGIN_E_F     ((float)ST_PLUGIN_E)
+
+// Calc voicebus idx from param/mod
+#define Dstplugin_voicebus(i,p) \
+   if((p) < 0.0f) (p) = 0.0f;   \
+   (p) *= 100.0f;                          \
+   i = (unsigned int)((p) + 0.5f);   \
+   if(i >= ST_PLUGIN_MAX_LAYERS) \
+      i = ST_PLUGIN_MAX_LAYERS - 1u; \
+   if(0u == i) \
+   { \
+      if(0u != voice->base.layer_idx) \
+         i = voice->base.layer_idx - 1u;  /* previous layer output */ \
+      /* else: illegal ref to previous layer in first layer (=> use first layer) */ \
+   } \
+   else \
+      i--
 
 
 #ifdef __cplusplus

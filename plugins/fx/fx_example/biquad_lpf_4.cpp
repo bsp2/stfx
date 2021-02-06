@@ -8,7 +8,7 @@
 // ---- info   : a biquad low pass filter that supports per-sample-frame parameter interpolation
 // ----
 // ---- created: 21May2020
-// ---- changed: 24May2020, 31May2020
+// ---- changed: 24May2020, 31May2020, 08Jun2020
 // ----
 // ----
 // ----
@@ -124,18 +124,12 @@ static const char *ST_PLUGIN_API loc_get_mod_name(st_plugin_info_t *_info,
 
 static void ST_PLUGIN_API loc_note_on(st_plugin_voice_t  *_voice,
                                       int                 _bGlide,
-                                      unsigned int        _voiceIdx,
-                                      unsigned int        _activeNoteIdx,
                                       unsigned char       _note,
-                                      float               _noteHz,
                                       float               _vel
                                       ) {
    ST_PLUGIN_VOICE_CAST(biquad_lpf_4_voice_t);
    (void)_bGlide;
-   (void)_voiceIdx;
-   (void)_activeNoteIdx;
    (void)_note;
-   (void)_noteHz;
    (void)_vel;
    if(!_bGlide)
    {

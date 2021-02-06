@@ -1,0 +1,15 @@
+
+TARGET=sql_bootyshifter
+TARGET_DIR := $(TARGET_DIR)/fx
+
+CPPFLAGS += -Icomposites/ -Idsp/utils/ -Idsp/third-party/src -Idsp/third-party/falco/ -Idsp/generators/ -Idsp/filters/ 
+
+ALL_OBJ= \
+   dsp/filters/HilbertFilterDesigner.o \
+   dsp/filters/ButterworthFilterDesigner.o \
+	dsp/third-party/falco/DspFilter.o \
+	dsp/utils/AudioMath.o \
+	dsp/utils/ObjectCache.o \
+	sql_bootyshifter.o \
+	sql_bootyshifter_pan.o \
+	squinkylabs.o

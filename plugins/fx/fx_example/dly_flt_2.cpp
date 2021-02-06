@@ -8,7 +8,7 @@
 // ---- info   : a cross feedback delay line with variable shape (sweepable multimode) filtering
 // ----
 // ---- created: 25May2020
-// ---- changed: 31May2020
+// ---- changed: 31May2020, 08Jun2020
 // ----
 // ----
 // ----
@@ -172,18 +172,12 @@ static const char *ST_PLUGIN_API loc_get_mod_name(st_plugin_info_t *_info,
 
 static void ST_PLUGIN_API loc_note_on(st_plugin_voice_t  *_voice,
                                       int                 _bGlide,
-                                      unsigned int        _voiceIdx,
-                                      unsigned int        _activeNoteIdx,
                                       unsigned char       _note,
-                                      float               _noteHz,
                                       float               _vel
                                       ) {
    ST_PLUGIN_VOICE_CAST(dly_flt_2_voice_t);
    (void)_bGlide;
-   (void)_voiceIdx;
-   (void)_activeNoteIdx;
    (void)_note;
-   (void)_noteHz;
    (void)_vel;
    // printf("xxx dly_flt_2: note_on(bGlide=%d voiceIdx=%u activeNoteIdx=%u note=%u noteHz=%f vel=%f)\n", _bGlide, _voiceIdx, _activeNoteIdx, _note, _noteHz, _vel);
    // fflush(stdout);

@@ -1,0 +1,8 @@
+
+TARGET=je_wavefolder
+TARGET_DIR := $(TARGET_DIR)/fx
+
+ALL_OBJ= \
+	ext/LambertW/FukushimaLambertW.o \
+	ext/LambertW/LambertW.o \
+	je_wavefolder.o

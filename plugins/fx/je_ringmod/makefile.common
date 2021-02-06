@@ -1,0 +1,8 @@
+
+TARGET=je_ringmod
+TARGET_DIR := $(TARGET_DIR)/fx
+
+ALL_OBJ= \
+	je_ringmod.o \
+	je_x_ringmod.o \
+	je.o
