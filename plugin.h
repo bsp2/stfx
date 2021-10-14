@@ -23,7 +23,7 @@
 // ----
 // ---- created: 16May2020
 // ---- changed: 17May2020, 18May2020, 19May2020, 20May2020, 24May2020, 31May2020, 06Jun2020
-// ----          08Jun2020
+// ----          08Jun2020, 16Aug2021
 // ----
 // ----
 // ----
@@ -461,6 +461,7 @@ typedef st_plugin_info_t *(*ST_PLUGIN_API st_plugin_init_fxn_t) (unsigned int _p
 // Utility macros
 //
 #define ST_PLUGIN_SHARED_CAST(a) a *shared = (a*)_shared
+#define ST_PLUGIN_INFO_CAST(a) a *info = (a*)_info
 #define ST_PLUGIN_VOICE_CAST(a) a *voice = (a*)_voice
 #define ST_PLUGIN_VOICE_INFO_CAST(a) a *info = (a*)_voice->shared->info
 #define ST_PLUGIN_VOICE_SHARED_CAST(a) a *shared = (a*)_voice->shared
@@ -514,6 +515,21 @@ typedef st_plugin_info_t *(*ST_PLUGIN_API st_plugin_init_fxn_t) (unsigned int _p
    } \
    else \
       i--
+
+typedef union stplugin_fi_u {
+   float f;
+   unsigned int ui;
+} stplugin_fi_t;
+
+typedef union stplugin_us8_u {
+   char s;
+   unsigned char u;
+} stplugin_us8_t;
+
+typedef union stplugin_us16_u {
+   short s;
+   unsigned short u;
+} stplugin_us16_t;
 
 
 #ifdef __cplusplus
