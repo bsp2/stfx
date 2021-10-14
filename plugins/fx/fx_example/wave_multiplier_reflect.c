@@ -1,14 +1,14 @@
 // ----
-// ---- file   : amp.cpp
+// ---- file   : wave_multiplier_reflect.cpp
 // ---- author : Bastian Spiegel <bs@tkscript.de>
-// ---- legal  : (c) 2020 by Bastian Spiegel. 
+// ---- legal  : (c) 2021 by Bastian Spiegel. 
 // ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See 
 // ----          http://www.gnu.org/licenses/licenses.html#LGPL or COPYING for further information.
 // ----
-// ---- info   : amplifier
+// ---- info   : pseudo phase shifter
 // ----
-// ---- created: 21May2020
-// ---- changed: 24May2020, 08Jun2020
+// ---- created: 13Oct2021
+// ---- changed: 
 // ----
 // ----
 // ----
@@ -21,42 +21,84 @@
 #include "../../../plugin.h"
 
 #define PARAM_DRYWET   0
-#define PARAM_DRIVE    1
-#define NUM_PARAMS     2
+#define PARAM_INLVL    1
+#define PARAM_SHIFT1   2
+#define PARAM_LEVEL1   3
+#define PARAM_SHIFT2   4
+#define PARAM_LEVEL2   5
+#define PARAM_SHIFT3   6
+#define PARAM_LEVEL3   7
+#define NUM_PARAMS     8
 static const char *loc_param_names[NUM_PARAMS] = {
    "Dry / Wet",
-   "Drive"
+   "Input Lvl",
+   "Shift 1",
+   "Level 1",
+   "Shift 2",
+   "Level 2",
+   "Shift 3",
+   "Level 3",
 };
 static float loc_param_resets[NUM_PARAMS] = {
    1.0f,  // DRYWET
-   0.5f,  // DRIVE
+   0.5f,  // INLVL
+   0.5f,  // SHIFT1
+   0.0f,  // LEVEL1
+   0.5f,  // SHIFT2
+   0.0f,  // LEVEL2
+   0.5f,  // SHIFT3
+   0.0f,  // LEVEL3
 };
 
 #define MOD_DRYWET  0
-#define MOD_DRIVE   1
-#define NUM_MODS    2
+#define MOD_INLVL   1
+#define MOD_SHIFT1  2
+#define MOD_LEVEL1  3
+#define MOD_SHIFT2  4
+#define MOD_LEVEL2  5
+#define MOD_SHIFT3  6
+#define MOD_LEVEL3  7
+#define NUM_MODS    8
 static const char *loc_mod_names[NUM_MODS] = {
    "Dry / Wet",
-   "Drive"
+   "Input Lvl",
+   "Shift 1",
+   "Level 1",
+   "Shift 2",
+   "Level 2",
+   "Shift 3",
+   "Level 3",
 };
 
-typedef struct amp_info_s {
+typedef struct wave_multiplier_reflect_info_s {
    st_plugin_info_t base;
-} amp_info_t;
+} wave_multiplier_reflect_info_t;
 
-typedef struct amp_shared_s {
+typedef struct wave_multiplier_reflect_shared_s {
    st_plugin_shared_t base;
    float params[NUM_PARAMS];
-} amp_shared_t;
+} wave_multiplier_reflect_shared_t;
 
-typedef struct amp_voice_s {
+typedef struct wave_multiplier_reflect_voice_s {
    st_plugin_voice_t base;
    float    mods[NUM_MODS];
    float    mod_drywet_cur;
    float    mod_drywet_inc;
-   float    mod_drive_cur;
-   float    mod_drive_inc;
-} amp_voice_t;
+   float    mod_inlevel_cur;
+   float    mod_inlevel_inc;
+   float    mod_shift1_cur;
+   float    mod_shift1_inc;
+   float    mod_level1_cur;
+   float    mod_level1_inc;
+   float    mod_shift2_cur;
+   float    mod_shift2_inc;
+   float    mod_level2_cur;
+   float    mod_level2_inc;
+   float    mod_shift3_cur;
+   float    mod_shift3_inc;
+   float    mod_level3_cur;
+   float    mod_level3_inc;
+} wave_multiplier_reflect_voice_t;
 
 
 static const char *ST_PLUGIN_API loc_get_param_name(st_plugin_info_t *_info,
@@ -76,7 +118,7 @@ static float ST_PLUGIN_API loc_get_param_reset(st_plugin_info_t *_info,
 static float ST_PLUGIN_API loc_get_param_value(st_plugin_shared_t *_shared,
                                                unsigned int        _paramIdx
                                                ) {
-   ST_PLUGIN_SHARED_CAST(amp_shared_t);
+   ST_PLUGIN_SHARED_CAST(wave_multiplier_reflect_shared_t);
    return shared->params[_paramIdx];
 }
 
@@ -84,7 +126,7 @@ static void ST_PLUGIN_API loc_set_param_value(st_plugin_shared_t *_shared,
                                               unsigned int        _paramIdx,
                                               float               _value
                                               ) {
-   ST_PLUGIN_SHARED_CAST(amp_shared_t);
+   ST_PLUGIN_SHARED_CAST(wave_multiplier_reflect_shared_t);
    shared->params[_paramIdx] = _value;
 }
 
@@ -100,7 +142,7 @@ static void ST_PLUGIN_API loc_note_on(st_plugin_voice_t  *_voice,
                                       unsigned char       _note,
                                       float               _vel
                                       ) {
-   ST_PLUGIN_VOICE_CAST(amp_voice_t);
+   ST_PLUGIN_VOICE_CAST(wave_multiplier_reflect_voice_t);
    (void)_bGlide;
    (void)_note;
    (void)_vel;
@@ -115,7 +157,7 @@ static void ST_PLUGIN_API loc_set_mod_value(st_plugin_voice_t *_voice,
                                             float              _value,
                                             unsigned           _frameOffset
                                             ) {
-   ST_PLUGIN_VOICE_CAST(amp_voice_t);
+   ST_PLUGIN_VOICE_CAST(wave_multiplier_reflect_voice_t);
    (void)_frameOffset;
    voice->mods[_modIdx] = _value;
 }
@@ -127,8 +169,8 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
                                             float              _vol,
                                             float              _pan
                                             ) {
-   ST_PLUGIN_VOICE_CAST(amp_voice_t);
-   ST_PLUGIN_VOICE_SHARED_CAST(amp_shared_t);
+   ST_PLUGIN_VOICE_CAST(wave_multiplier_reflect_voice_t);
+   ST_PLUGIN_VOICE_SHARED_CAST(wave_multiplier_reflect_shared_t);
    (void)_freqHz;
    (void)_note;
    (void)_vol;
@@ -137,23 +179,54 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
    float modDryWet = shared->params[PARAM_DRYWET]   + voice->mods[MOD_DRYWET];
    modDryWet = Dstplugin_clamp(modDryWet, 0.0f, 1.0f);
 
-   float modDrive = ((shared->params[PARAM_DRIVE] - 0.5f) * 2.0f) + voice->mods[MOD_DRIVE];
-   modDrive = powf(10.0f, modDrive * 2.0f);
+   float modInLevel = ((shared->params[PARAM_INLVL] - 0.5f) * 2.0f) + voice->mods[MOD_INLVL];
+   modInLevel = powf(10.0f, modInLevel * 2.0f);
+
+   float modShift1 = (2.0f * shared->params[PARAM_SHIFT1] - 1.0f) + voice->mods[MOD_SHIFT1];
+   float modLevel1 = shared->params[PARAM_LEVEL1] + voice->mods[MOD_LEVEL1];
+   modLevel1 = Dstplugin_clamp(modLevel1, -1.0f, 1.0f);
+
+   float modShift2 = (2.0f * shared->params[PARAM_SHIFT2] - 1.0f) + voice->mods[MOD_SHIFT2];
+   float modLevel2 = shared->params[PARAM_LEVEL2] + voice->mods[MOD_LEVEL2];
+   modLevel2 = Dstplugin_clamp(modLevel2, -1.0f, 1.0f);
+
+   float modShift3 = (2.0f * shared->params[PARAM_SHIFT3] - 1.0f) + voice->mods[MOD_SHIFT3];
+   float modLevel3 = shared->params[PARAM_LEVEL3] + voice->mods[MOD_LEVEL3];
+   modLevel3 = Dstplugin_clamp(modLevel3, -1.0f, 1.0f);
+
 
    if(_numFrames > 0u)
    {
       // lerp
       float recBlockSize = (1.0f / _numFrames);
-      voice->mod_drywet_inc = (modDryWet - voice->mod_drywet_cur) * recBlockSize;
-      voice->mod_drive_inc  = (modDrive  - voice->mod_drive_cur)  * recBlockSize;
+      voice->mod_drywet_inc  = (modDryWet  - voice->mod_drywet_cur)  * recBlockSize;
+      voice->mod_inlevel_inc = (modInLevel - voice->mod_inlevel_cur) * recBlockSize;
+      voice->mod_shift1_inc  = (modShift1  - voice->mod_shift1_cur)  * recBlockSize;
+      voice->mod_level1_inc  = (modLevel1  - voice->mod_level1_cur)  * recBlockSize;
+      voice->mod_shift2_inc  = (modShift2  - voice->mod_shift2_cur)  * recBlockSize;
+      voice->mod_level2_inc  = (modLevel2  - voice->mod_level2_cur)  * recBlockSize;
+      voice->mod_shift3_inc  = (modShift3  - voice->mod_shift3_cur)  * recBlockSize;
+      voice->mod_level3_inc  = (modLevel3  - voice->mod_level3_cur)  * recBlockSize;
    }
    else
    {
       // initial params/modulation (first block, not rendered)
-      voice->mod_drywet_cur = modDryWet;
-      voice->mod_drywet_inc = 0.0f;
-      voice->mod_drive_cur  = modDrive;
-      voice->mod_drive_inc  = 0.0f;
+      voice->mod_drywet_cur  = modDryWet;
+      voice->mod_drywet_inc  = 0.0f;
+      voice->mod_inlevel_cur = modInLevel;
+      voice->mod_inlevel_inc = 0.0f;
+      voice->mod_shift1_cur  = modShift1;
+      voice->mod_shift1_inc  = 0.0f;
+      voice->mod_level1_cur  = modLevel1;
+      voice->mod_level1_inc  = 0.0f;
+      voice->mod_shift2_cur  = modShift2;
+      voice->mod_shift2_inc  = 0.0f;
+      voice->mod_level2_cur  = modLevel2;
+      voice->mod_level2_inc  = 0.0f;
+      voice->mod_shift3_cur  = modShift3;
+      voice->mod_shift3_inc  = 0.0f;
+      voice->mod_level3_cur  = modLevel3;
+      voice->mod_level3_inc  = 0.0f;
    }
 }
 
@@ -164,53 +237,63 @@ static void ST_PLUGIN_API loc_process_replace(st_plugin_voice_t  *_voice,
                                               unsigned int        _numFrames
                                               ) {
    // Ring modulate at (modulated) note frequency
-   ST_PLUGIN_VOICE_CAST(amp_voice_t);
-   ST_PLUGIN_VOICE_SHARED_CAST(amp_shared_t);
+   ST_PLUGIN_VOICE_CAST(wave_multiplier_reflect_voice_t);
+   ST_PLUGIN_VOICE_SHARED_CAST(wave_multiplier_reflect_shared_t);
 
    unsigned int k = 0u;
 
-   if(_bMonoIn)
+   for(unsigned int i = 0u; i < _numFrames; i++)
    {
-      // Mono input, stereo output
-      for(unsigned int i = 0u; i < _numFrames; i++)
+      for(unsigned int ch = 0u; ch < 2u; ch++)
       {
-         float l = _samplesIn[k];
-         float outL = l * voice->mod_drive_cur;
-         outL = l + (outL - l) * voice->mod_drywet_cur;
-         _samplesOut[k]      = outL;
-         _samplesOut[k + 1u] = outL;
+         float l = _samplesIn[k + ch];
 
-         // Next frame
-         k += 2u;
-         voice->mod_drywet_cur += voice->mod_drywet_inc;
-         voice->mod_drive_cur  += voice->mod_drive_inc;
-      }
-   }
-   else
-   {
-      // Stereo input, stereo output
-      for(unsigned int i = 0u; i < _numFrames; i++)
-      {
-         float l = _samplesIn[k];
-         float r = _samplesIn[k + 1u];
-         float outL = l * voice->mod_drive_cur;
-         float outR = r * voice->mod_drive_cur;
-         outL = l + (outL - l) * voice->mod_drywet_cur;
-         outR = r + (outR - r) * voice->mod_drywet_cur;
-         _samplesOut[k]      = outL;
-         _samplesOut[k + 1u] = outR;
+         float lAmp = l * voice->mod_inlevel_cur;
+         float outL = 0.0f;
 
-         // Next frame
-         k += 2u;
-         voice->mod_drywet_cur += voice->mod_drywet_inc;
-         voice->mod_drive_cur  += voice->mod_drive_inc;
+         float out1 = lAmp + voice->mod_shift1_cur;
+         if(out1 < -1.0f)
+            out1 = -2.0f - out1;
+         else if(out1 > 1.0f)
+            out1 = 2.0f - out1;
+
+         float out2 = lAmp + voice->mod_shift2_cur;
+         if(out2 < -1.0f)
+            out2 = -2.0f - out2;
+         else if(out2 > 1.0f)
+            out2 = 2.0f - out2;
+
+         float out3 = lAmp + voice->mod_shift3_cur;
+         if(out3 < -1.0f)
+            out3 = -2.0f - out3;
+         else if(out3 > 1.0f)
+            out3 = 2.0f - out3;
+
+         outL += out1 * voice->mod_level1_cur;
+         outL += out2 * voice->mod_level2_cur;
+         outL += out3 * voice->mod_level3_cur;
+
+         outL = l + (outL - l) * voice->mod_drywet_cur;
+
+         _samplesOut[k + ch] = outL;
       }
+
+      // Next frame
+      k += 2u;
+      voice->mod_drywet_cur  += voice->mod_drywet_inc;
+      voice->mod_inlevel_cur += voice->mod_inlevel_inc;
+      voice->mod_shift1_cur  += voice->mod_shift1_inc;
+      voice->mod_level1_cur  += voice->mod_level1_inc;
+      voice->mod_shift2_cur  += voice->mod_shift2_inc;
+      voice->mod_level2_cur  += voice->mod_level2_inc;
+      voice->mod_shift3_cur  += voice->mod_shift3_inc;
+      voice->mod_level3_cur  += voice->mod_level3_inc;
    }
 
 }
 
 static st_plugin_shared_t *ST_PLUGIN_API loc_shared_new(st_plugin_info_t *_info) {
-   amp_shared_t *ret = (amp_shared_t *)malloc(sizeof(amp_shared_t));
+   wave_multiplier_reflect_shared_t *ret = (wave_multiplier_reflect_shared_t *)malloc(sizeof(wave_multiplier_reflect_shared_t));
    if(NULL != ret)
    {
       memset((void*)ret, 0, sizeof(*ret));
@@ -225,7 +308,7 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
 }
 
 static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
-   amp_voice_t *ret = (amp_voice_t *)malloc(sizeof(amp_voice_t));
+   wave_multiplier_reflect_voice_t *ret = (wave_multiplier_reflect_voice_t *)malloc(sizeof(wave_multiplier_reflect_voice_t));
    if(NULL != ret)
    {
       memset((void*)ret, 0, sizeof(*ret));
@@ -242,22 +325,22 @@ static void ST_PLUGIN_API loc_plugin_exit(st_plugin_info_t *_info) {
    free((void*)_info);
 }
 
-st_plugin_info_t *amp_init(void) {
-   amp_info_t *ret = NULL;
+st_plugin_info_t *wave_multiplier_reflect_init(void) {
+   wave_multiplier_reflect_info_t *ret = NULL;
 
-   ret = (amp_info_t *)malloc(sizeof(amp_info_t));
+   ret = (wave_multiplier_reflect_info_t *)malloc(sizeof(wave_multiplier_reflect_info_t));
 
    if(NULL != ret)
    {
       memset((void*)ret, 0, sizeof(*ret));
 
       ret->base.api_version = ST_PLUGIN_API_VERSION;
-      ret->base.id          = "bsp amp";  // unique id. don't change this in future builds.
+      ret->base.id          = "bsp wave_multiplier_reflect";  // unique id. don't change this in future builds.
       ret->base.author      = "bsp";
-      ret->base.name        = "amp";
-      ret->base.short_name  = "amp";
+      ret->base.name        = "wave_multiplier_reflect";
+      ret->base.short_name  = "wave_multiplier_reflect";
       ret->base.flags       = ST_PLUGIN_FLAG_FX;
-      ret->base.category    = ST_PLUGIN_CAT_AMP;
+      ret->base.category    = ST_PLUGIN_CAT_CHORUS;
       ret->base.num_params  = NUM_PARAMS;
       ret->base.num_mods    = NUM_MODS;
 

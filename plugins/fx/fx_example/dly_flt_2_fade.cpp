@@ -1,5 +1,5 @@
 // ----
-// ---- file   : dly_flt_2.cpp
+// ---- file   : dly_flt_2_fade.cpp
 // ---- author : Bastian Spiegel <bs@tkscript.de>
 // ---- legal  : (c) 2020-2021 by Bastian Spiegel. 
 // ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See 
@@ -8,10 +8,13 @@
 // ---- info   : a cross feedback delay line with variable shape (sweepable multimode) filtering
 // ----
 // ---- created: 25May2020
-// ---- changed: 31May2020, 08Jun2020, 10Feb2021
+// ---- changed: 31May2020, 08Jun2020, 10Feb2021, 11Feb2021
 // ----
 // ----
 // ----
+
+// must be a power of two
+#define FADE_LEN  (256u)
 
 #include <stdlib.h>
 #include <string.h>
@@ -64,24 +67,28 @@ static const char *loc_mod_names[NUM_MODS] = {
    "Flt Shape"
 };
 
-typedef struct dly_flt_2_info_s {
+typedef struct dly_flt_2_fade_info_s {
    st_plugin_info_t base;
-} dly_flt_2_info_t;
+} dly_flt_2_fade_info_t;
 
-typedef struct dly_flt_2_shared_s {
+typedef struct dly_flt_2_fade_shared_s {
    st_plugin_shared_t base;
    float params[NUM_PARAMS];
-} dly_flt_2_shared_t;
+} dly_flt_2_fade_shared_t;
 
-typedef struct dly_flt_2_voice_s {
+typedef struct dly_flt_2_fade_voice_s {
    st_plugin_voice_t base;
    float         sample_rate;
    float         mods[NUM_MODS];
    float         mod_time_smooth;
    float         mod_time_l_cur;
-   float         mod_time_l_inc;
+   float         mod_time_l_next;
+   float         mod_time_l_target;
+   float         time_fade_amt;
+   unsigned int  time_fade_idx;
    float         mod_time_r_cur;
-   float         mod_time_r_inc;
+   float         mod_time_r_next;
+   float         mod_time_r_target;
    float         mod_fb_cur;
    float         mod_fb_inc;
    float         mod_xfb_cur;
@@ -124,13 +131,13 @@ typedef struct dly_flt_2_voice_s {
       }
    }
 
-} dly_flt_2_voice_t;
+} dly_flt_2_fade_voice_t;
 
 
 static void ST_PLUGIN_API loc_set_sample_rate(st_plugin_voice_t *_voice,
                                               float              _sampleRate
                                               ) {
-   ST_PLUGIN_VOICE_CAST(dly_flt_2_voice_t);
+   ST_PLUGIN_VOICE_CAST(dly_flt_2_fade_voice_t);
    voice->sample_rate = _sampleRate;
 }
 
@@ -151,7 +158,7 @@ static float ST_PLUGIN_API loc_get_param_reset(st_plugin_info_t *_info,
 static float ST_PLUGIN_API loc_get_param_value(st_plugin_shared_t *_shared,
                                                unsigned int        _paramIdx
                                                ) {
-   ST_PLUGIN_SHARED_CAST(dly_flt_2_shared_t);
+   ST_PLUGIN_SHARED_CAST(dly_flt_2_fade_shared_t);
    return shared->params[_paramIdx];
 }
 
@@ -159,7 +166,7 @@ static void ST_PLUGIN_API loc_set_param_value(st_plugin_shared_t *_shared,
                                               unsigned int        _paramIdx,
                                               float               _value
                                               ) {
-   ST_PLUGIN_SHARED_CAST(dly_flt_2_shared_t);
+   ST_PLUGIN_SHARED_CAST(dly_flt_2_fade_shared_t);
    shared->params[_paramIdx] = _value;
 }
 
@@ -175,11 +182,11 @@ static void ST_PLUGIN_API loc_note_on(st_plugin_voice_t  *_voice,
                                       unsigned char       _note,
                                       float               _vel
                                       ) {
-   ST_PLUGIN_VOICE_CAST(dly_flt_2_voice_t);
+   ST_PLUGIN_VOICE_CAST(dly_flt_2_fade_voice_t);
    (void)_bGlide;
    (void)_note;
    (void)_vel;
-   // printf("xxx dly_flt_2: note_on(bGlide=%d voiceIdx=%u activeNoteIdx=%u note=%u noteHz=%f vel=%f)\n", _bGlide, _voiceIdx, _activeNoteIdx, _note, _noteHz, _vel);
+   // printf("xxx dly_flt_2_fade: note_on(bGlide=%d voiceIdx=%u activeNoteIdx=%u note=%u noteHz=%f vel=%f)\n", _bGlide, _voiceIdx, _activeNoteIdx, _note, _noteHz, _vel);
    // fflush(stdout);
    if(!_bGlide)
    {
@@ -196,7 +203,7 @@ static void ST_PLUGIN_API loc_set_mod_value(st_plugin_voice_t *_voice,
                                             float              _value,
                                             unsigned           _frameOffset
                                             ) {
-   ST_PLUGIN_VOICE_CAST(dly_flt_2_voice_t);
+   ST_PLUGIN_VOICE_CAST(dly_flt_2_fade_voice_t);
    (void)_frameOffset;
    voice->mods[_modIdx] = _value;
 }
@@ -208,8 +215,8 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
                                             float              _vol,
                                             float              _pan
                                             ) {
-   ST_PLUGIN_VOICE_CAST(dly_flt_2_voice_t);
-   ST_PLUGIN_VOICE_SHARED_CAST(dly_flt_2_shared_t);
+   ST_PLUGIN_VOICE_CAST(dly_flt_2_fade_voice_t);
+   ST_PLUGIN_VOICE_SHARED_CAST(dly_flt_2_fade_shared_t);
    (void)_freqHz;
    (void)_note;
    (void)_vol;
@@ -220,7 +227,7 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
    float newTime = shared->params[PARAM_TIME] * powf(10.0f, voice->mods[MOD_TIME]);
 
    if(_numFrames > 0u)
-      voice->mod_time_smooth = (float)(voice->mod_time_smooth + (newTime - voice->mod_time_smooth) * 0.0075f);
+      voice->mod_time_smooth = (float)(voice->mod_time_smooth + (newTime - voice->mod_time_smooth) * 0.001f);
    else
       voice->mod_time_smooth = newTime;
 
@@ -262,10 +269,10 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
    {
       // lerp
       float recBlockSize = (1.0f / _numFrames);
-      voice->mod_time_l_inc = (modTimeL  - voice->mod_time_l_cur) * recBlockSize;
-      voice->mod_time_r_inc = (modTimeR  - voice->mod_time_r_cur) * recBlockSize;
-      voice->mod_fb_inc     = (modFb     - voice->mod_fb_cur)     * recBlockSize;
-      voice->mod_xfb_inc    = (modXfb    - voice->mod_xfb_cur)    * recBlockSize;
+      voice->mod_time_l_target = modTimeL;
+      voice->mod_time_r_target = modTimeR;
+      voice->mod_fb_inc        = (modFb     - voice->mod_fb_cur)     * recBlockSize;
+      voice->mod_xfb_inc       = (modXfb    - voice->mod_xfb_cur)    * recBlockSize;
 
       voice->flt_1_l.shuffleCoeff();
       voice->flt_1_r.shuffleCoeff();
@@ -277,14 +284,18 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
    else
    {
       // initial params/modulation (first block, not rendered)
-      voice->mod_time_l_cur = modTimeL;
-      voice->mod_time_l_inc = 0.0f;
-      voice->mod_time_r_cur = modTimeR;
-      voice->mod_time_r_inc = 0.0f;
-      voice->mod_fb_cur     = modFb;
-      voice->mod_fb_inc     = 0.0f;
-      voice->mod_xfb_cur    = modXfb;
-      voice->mod_xfb_inc    = 0.0f;
+      voice->mod_time_l_cur    = modTimeL;
+      voice->mod_time_l_next   = modTimeL;
+      voice->mod_time_l_target = modTimeL;
+      voice->time_fade_amt     = 0.0f;
+      voice->time_fade_idx     = 0u;
+      voice->mod_time_r_cur    = modTimeR;
+      voice->mod_time_r_next   = modTimeR;
+      voice->mod_time_r_target = modTimeR;
+      voice->mod_fb_cur        = modFb;
+      voice->mod_fb_inc        = 0.0f;
+      voice->mod_xfb_cur       = modXfb;
+      voice->mod_xfb_inc       = 0.0f;
 
       voice->calcFltCoeff(voice->flt_1_l.next, modFltShape, modFltFreq, modFltQ);
       voice->flt_1_r.next = voice->flt_1_l.next;
@@ -298,62 +309,36 @@ static void ST_PLUGIN_API loc_process_replace(st_plugin_voice_t  *_voice,
                                               unsigned int        _numFrames
                                               ) {
    // Ring modulate at (modulated) note frequency
-   ST_PLUGIN_VOICE_CAST(dly_flt_2_voice_t);
-   ST_PLUGIN_VOICE_SHARED_CAST(dly_flt_2_shared_t);
+   ST_PLUGIN_VOICE_CAST(dly_flt_2_fade_voice_t);
+   ST_PLUGIN_VOICE_SHARED_CAST(dly_flt_2_fade_shared_t);
 
    unsigned int k = 0u;
+   float c;
+   float n;
 
    // Stereo input, stereo output
    for(unsigned int i = 0u; i < _numFrames; i++)
    {
-#if 0
-      // sounds weird when both fb+xfb are used (sample delay?)
-      float l = _samplesIn[k];
-      float fltL = voice->flt_1_l.filter(l);
-      float dlyLastL = voice->dly_l.last_out;
-      voice->dly_l.push(fltL + voice->dly_r.last_out * voice->mod_xfb_cur, voice->mod_fb_cur);
-      float outL = voice->dly_l.readLinear(voice->mod_time_l_cur);
-      outL = Dstplugin_fix_denorm_32(outL);
-
-      float r = _samplesIn[k + 1u];
-      float fltR = voice->flt_1_r.filter(r);
-      voice->dly_r.push(fltR + dlyLastL * voice->mod_xfb_cur, voice->mod_fb_cur);
-      float outR = voice->dly_r.readLinear(voice->mod_time_r_cur);
-      outR = Dstplugin_fix_denorm_32(outR);
-#elif 0
-      // filter on input only
-      //  (note) useful to create "send-level" type effects (by using highpass to thin out input)
-      //  (note) but this also be achieved via a serial effect setup (mmf -> dly_2)
-      float l = _samplesIn[k];
-      float fltL = voice->flt_1_l.filter(l);
-      voice->dly_l.push(fltL, voice->mod_fb_cur);
-      float outL = voice->dly_l.readLinear(voice->mod_time_l_cur);
-      outL = Dstplugin_fix_denorm_32(outL);
-
-      float r = _samplesIn[k + 1u];
-      float fltR = voice->flt_1_r.filter(r);
-      voice->dly_r.push(fltR, voice->mod_fb_cur);
-      float outR = voice->dly_r.readLinear(voice->mod_time_r_cur);
-      outR = Dstplugin_fix_denorm_32(outR);
-
-      float lastL = voice->dly_l.last_out;
-      voice->dly_l.add(voice->dly_r.last_out * voice->mod_xfb_cur);
-      voice->dly_r.add(lastL * voice->mod_xfb_cur);
-#else
       // filter in feedback loop
       float l = _samplesIn[k];
       float lastOutL = voice->dly_l.last_out;
-      float fltL = voice->flt_1_l.filter(l + lastOutL * voice->mod_fb_cur + voice->dly_r.last_out * voice->mod_xfb_cur);
-      voice->dly_l.pushRaw(fltL);
-      float outL = voice->dly_l.readLinear(voice->mod_time_l_cur);
+      c = voice->dly_l.readLinear(voice->mod_time_l_cur);
+      n = voice->dly_l.readLinear(voice->mod_time_l_next);
+      float outL = c + (n - c) * voice->time_fade_amt;
       outL = Dstplugin_fix_denorm_32(outL);
+      float newL = voice->flt_1_l.filter(l + lastOutL * voice->mod_fb_cur + voice->dly_r.last_out * voice->mod_xfb_cur);
+      voice->dly_l.pushRaw(newL);
+      voice->dly_l.last_out = outL;
 
       float r = _samplesIn[k + 1u];
-      float fltR = voice->flt_1_r.filter(r + voice->dly_r.last_out * voice->mod_fb_cur + lastOutL * voice->mod_xfb_cur);
-      voice->dly_r.pushRaw(fltR);
-      float outR = voice->dly_r.readLinear(voice->mod_time_r_cur);
+      float lastOutR = voice->dly_r.last_out;
+      c = voice->dly_r.readLinear(voice->mod_time_r_cur);
+      n = voice->dly_r.readLinear(voice->mod_time_r_next);
+      float outR = c + (n - c) * voice->time_fade_amt;
       outR = Dstplugin_fix_denorm_32(outR);
-#endif
+      float newR = voice->flt_1_r.filter(r + lastOutR * voice->mod_fb_cur + lastOutL * voice->mod_xfb_cur);
+      voice->dly_r.pushRaw(newR);
+      voice->dly_r.last_out = outR;
 
       outL = l + (outL - l) * shared->params[PARAM_DRYWET];
       outR = r + (outR - r) * shared->params[PARAM_DRYWET];
@@ -363,15 +348,26 @@ static void ST_PLUGIN_API loc_process_replace(st_plugin_voice_t  *_voice,
 
       // Next frame
       k += 2u;
-      voice->mod_time_l_cur += voice->mod_time_l_inc;
-      voice->mod_time_r_cur += voice->mod_time_r_inc;
       voice->mod_fb_cur     += voice->mod_fb_inc;
       voice->mod_xfb_cur    += voice->mod_xfb_inc;
+
+      if(0u == (++voice->time_fade_idx & (FADE_LEN-1)))
+      {
+         voice->mod_time_l_cur  = voice->mod_time_l_next;
+         voice->mod_time_l_next = voice->mod_time_l_target;
+         voice->mod_time_r_cur  = voice->mod_time_r_next;
+         voice->mod_time_r_next = voice->mod_time_r_target;
+         voice->time_fade_amt = 0.0f;
+      }
+      else
+      {
+         voice->time_fade_amt += (1.0f / FADE_LEN);
+      }
    }
 }
 
 static st_plugin_shared_t *ST_PLUGIN_API loc_shared_new(st_plugin_info_t *_info) {
-   dly_flt_2_shared_t *ret = (dly_flt_2_shared_t *)malloc(sizeof(dly_flt_2_shared_t));
+   dly_flt_2_fade_shared_t *ret = (dly_flt_2_fade_shared_t *)malloc(sizeof(dly_flt_2_fade_shared_t));
    if(NULL != ret)
    {
       memset(ret, 0, sizeof(*ret));
@@ -386,7 +382,7 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
 }
 
 static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
-   dly_flt_2_voice_t *ret = (dly_flt_2_voice_t *)malloc(sizeof(dly_flt_2_voice_t));
+   dly_flt_2_fade_voice_t *ret = (dly_flt_2_fade_voice_t *)malloc(sizeof(dly_flt_2_fade_voice_t));
    if(NULL != ret)
    {
       memset((void*)ret, 0, sizeof(*ret));
@@ -404,19 +400,19 @@ static void ST_PLUGIN_API loc_plugin_exit(st_plugin_info_t *_info) {
 }
 
 extern "C" {
-st_plugin_info_t *dly_flt_2_init(void) {
+st_plugin_info_t *dly_flt_2_fade_init(void) {
 
-   dly_flt_2_info_t *ret = (dly_flt_2_info_t *)malloc(sizeof(dly_flt_2_info_t));
+   dly_flt_2_fade_info_t *ret = (dly_flt_2_fade_info_t *)malloc(sizeof(dly_flt_2_fade_info_t));
 
    if(NULL != ret)
    {
       memset(ret, 0, sizeof(*ret));
 
       ret->base.api_version = ST_PLUGIN_API_VERSION;
-      ret->base.id          = "bsp dly flt 2";  // unique id. don't change this in future builds.
+      ret->base.id          = "bsp dly flt 2 fade";  // unique id. don't change this in future builds.
       ret->base.author      = "bsp";
-      ret->base.name        = "delay filter 2";
-      ret->base.short_name  = "dly flt 2";
+      ret->base.name        = "delay filter 2 fade";
+      ret->base.short_name  = "dly flt 2 fd";
       ret->base.flags       = ST_PLUGIN_FLAG_FX | ST_PLUGIN_FLAG_TRUE_STEREO_OUT;
       ret->base.category    = ST_PLUGIN_CAT_DELAY;
       ret->base.num_params  = NUM_PARAMS;

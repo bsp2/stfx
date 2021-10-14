@@ -4,7 +4,7 @@
 // ---- info   : monophonic delay line
 // ----
 // ---- created: 24May2020
-// ---- changed: 
+// ---- changed: 13Oct2021
 // ----
 // ----
 // ----
@@ -12,9 +12,11 @@
 #ifndef __ST_DELAY_H__
 #define __ST_DELAY_H__
 
+#ifndef ST_DELAY_SIZE
 // ~743ms @44.1kHz
 #define ST_DELAY_SIZE  (32768u)
 #define ST_DELAY_MASK  (32767u)
+#endif // ST_DELAY_SIZE
 
 struct StDelay {
    unsigned int io_offset;
@@ -54,7 +56,7 @@ struct StDelay {
 
    float readLinear(float _offset) {
       unsigned int offC = (unsigned int)(_offset);
-      unsigned int offN = (unsigned int)(_offset - 1u);
+      unsigned int offN = (unsigned int)(_offset + 1u);
       offC = (io_offset - offC) & ST_DELAY_MASK;
       offN = (io_offset - offN) & ST_DELAY_MASK;
       float t = (_offset - (int)_offset);
