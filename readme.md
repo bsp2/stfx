@@ -74,12 +74,20 @@ st_plugin_voice_t *voice = info->voice_new(info);
 /* set sample rate */
 info->set_sample_rate(voice, 44100.0f);
 
-/* note on */
+/* note on (e.g. reset modulation when not gliding) */
 info->note_on(voice,
               0/*b_glide=false*/,
               (unsigned char)midiNote,
               velocity/*0..1*/
               );
+              
+/* set a parameter (host must check that param exists) */
+if(info->num_params > 0u)
+  info->set_param_value(shared, 0u/*paramIdx*/, 0.5f/*value*/);
+  
+/* modulate a parameter (host must check that modulation slot exists)
+if(info->num_mods > 0u)
+  info->set_mod_value(voice, 0u/*modIdx*/, -0.25f/*value*/, 0u/*frameOff*/);
 
 /* prepare first audio chunk after note on */
 info->prepare_block(voice,
@@ -89,7 +97,7 @@ info->prepare_block(voice,
                     vol/*0..1*/,
                     pan/*-1..1*/
                     );
-                    
+                                       
 /* prepare next audio chunk (1..n frames) */
 /*  (e.g. set up per-sample-frame parameter interpolation) */
 info->prepare_block(voice,
