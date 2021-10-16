@@ -46,6 +46,8 @@ There are three fundamental data structures:
 - `info->voice_delete(voice)` frees the voice instance
 - voices must be freed before freeing the shared instance
 
+_Note_: the number of parameters / modulation slots (8) is not an upper limit but rather the minimum a host should support
+
 
 ## Usage
 
