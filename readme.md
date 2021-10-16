@@ -89,7 +89,7 @@ if(info->num_params > 0u)
 if(info->num_mods > 0u)
   info->set_mod_value(voice, 0u/*modIdx*/, -0.25f/*value*/, 0u/*frameOff*/);
 
-/* prepare first audio chunk after note on */
+/* prepare first audio chunk after note on (set up initial parameter/modulation interpolation) */
 info->prepare_block(voice,
                     0u/*numFrames. 0u=first chunk*/,
                     freqHz/*0..n Hz*/,
@@ -99,7 +99,7 @@ info->prepare_block(voice,
                     );
                                        
 /* prepare next audio chunk (1..n frames) */
-/*  (e.g. set up per-sample-frame parameter interpolation) */
+/*  (e.g. update per-sample-frame parameter/modulation interpolation) */
 info->prepare_block(voice,
                     1u/*numFramesPerChunk*/,
                     freqHz,
