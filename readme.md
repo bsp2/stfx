@@ -40,6 +40,7 @@ There are three fundamental data structures:
 - per voice instance (see `struct st_plugin_voice_s`)
 - must be the first field in a _derived_ myplugin_voice struct
 - up to 8 modulation slots (usually in the range -1..1)
+- (optional) support for up to 32 voice buses, e.g. for cross-voice modulation
 - `myplugin_voice_t *voice = info->voice_new(info)`
 - `info->voice_delete(voice)` frees the voice instance
 - voices must be freed before freeing the shared instance
