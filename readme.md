@@ -51,8 +51,15 @@ There are three fundamental data structures:
 
 ``` c
 /* open DLL/SO and query st_plugin_init() function address (platform-specific) */
+#ifdef _MSC_VER
+// Windows
 HINSTANCE dllHandle = LoadLibrary(pathName);
-FARPROC fxnHandle = ::GetProcAddress(dllHandle, "st_plugin_init");
+FARPROC fxnHandle = GetProcAddress(dllHandle, "st_plugin_init");
+#else
+// Linux / MacOS
+void *dllHandle = dlopen(_pathName, RTLD_NOW/*flags*/)
+void *fxnHandle = dlsym(dllHandle, "st_plugin_init");
+#endif
 st_plugin_init_fxn_t initFxn = (st_plugin_init_fxn_t)fxnHandle;
 
 /* get plugin descriptor for first sub-plugin */
@@ -113,8 +120,14 @@ info->shared_delete(shared);
 /* delete plugin descriptor */
 info->plugin_exit(info);
 
-/* close plugin library */
+/* close plugin library (platform-specific) */
+#ifdef _MSC_VER
+// Windows
 FreeLibrary(dllHandle);
+#else
+// Linux / MacOS
+dlclose(dllHandle);
+#endif
 
 ```
 
