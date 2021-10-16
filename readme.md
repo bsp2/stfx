@@ -8,6 +8,7 @@ a lightweight, C-linkage audio plugin API that supports per-voice effects.
 
 - clutter-free, stable binary interface
 - not tied to a specific plugin host
+- platform agnostic (tested on Linux and Windows)
 - written in "C" (=> plugins can be written in virtually any natively compiled language)
 - single `.h` file, see [plugin.h](https://github.com/bsp2/stfx/blob/master/plugin.h)
 - liberal open source license that allows the interface to also be used in closed source applications (MIT)
