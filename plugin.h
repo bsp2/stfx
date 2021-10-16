@@ -67,6 +67,8 @@ typedef void *st_sample_handle_t;
 typedef void *st_samplebank_handle_t;
 typedef void *st_sampleplayer_handle_t;
 
+typedef void *st_ui_handle_t;
+
 
 // plugin api version
 #define ST_PLUGIN_API_VERSION  (1u)
@@ -376,9 +378,25 @@ struct st_plugin_info_s {
    //  - called immediately before plugin library is closed
    //  - callee must free info struct
    void (ST_PLUGIN_API *plugin_exit) (st_plugin_info_t *_info);
+
+
+   // Create host-specific extended plugin instance (user interface)
+   //  - 'hostName' is a unique host name identifier
+   //  - 'hostVersion' is the host version
+   //  - 'hostInfo' is a host-specific struct/class pointer
+   //  - called from UI thread
+   st_ui_handle_t (ST_PLUGIN_API *ui_new) (st_plugin_shared_t *_shared,
+                                           const char         *_hostName,
+                                           unsigned int        _hostVersion,
+                                           void               *_hostInfo
+                                           );
+
+   // Delete host-specific extended plugin instance (user interface)
+   //  - called from UI thread
+   void (ST_PLUGIN_API *ui_delete) (st_ui_handle_t _uiInstanceHandle);
    
 
-   void *_future[64 - 29];
+   void *_future[64 - 27];
 };
 
 
