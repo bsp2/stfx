@@ -46,6 +46,79 @@ There are three fundamental data structures:
 - voices must be freed before freeing the shared instance
 
 
+## Usage
+
+``` c
+/* open DLL/SO and query st_plugin_init() function address (platform-specific) */
+HINSTANCE dllHandle = LoadLibrary(pathName);
+FARPROC fxnHandle = ::GetProcAddress(dllHandle, ""st_plugin_init");
+st_plugin_init_fxn_t initFxn = (st_plugin_init_fxn_t)fxnHandle;
+
+/* get plugin descriptor for first sub-plugin */
+st_plugin_info_t *info = initFxn(0u/*pluginIdx*/);
+
+/* create 'shared' plugin instance (common to all voices) */
+st_plugin_shared_t *shared = info->shared_new(info);
+
+/* create voice plugin instance */
+st_plugin_voice_t *voice = info->voice_new(info);
+
+/* set sample rate */
+info->set_sample_rate(voice, 44100.0f);
+
+/* note on */
+info->note_on(voice,
+              0/*b_glide=false*/,
+              (unsigned char)midiNote,
+              velocity/*0..1*/
+              );
+
+/* prepare first audio chunk after note on */
+info->prepare_block(voice,
+                    0u/*numFrames. 0u=first chunk*/,
+                    freqHz/*0..n Hz*/,
+                    freqNote/*0..127 (MIDI note with fractional part)*/,
+                    vol/*0..1*/,
+                    pan/*-1..1*/
+                    );
+                    
+/* prepare next audio chunk (1..n frames) */
+/*  (e.g. setup per-sample-frame parameter interpolation) */
+info->prepare_block(voice,
+                    1u/*numFramesPerChunk*/,
+                    freqHz,
+                    freqNote,
+                    vol,
+                    pan
+                    );
+
+/* render interleaved stereo buffer */
+ioBuf[0] = ioBuf[1] = 0.0f;
+voice->voice_bus_read_offset = 0u;
+voice->voice_bus_buffers = NULL;
+voice->info->process_replace(voice,
+                             0/*bMonoIn=false*/,
+                             ioBuf/*samplesIn*/,
+                             ioBuf/*samplesOut*/,
+                             1u/*numFrames*/
+                             );
+                             
+/* delete voice instance */
+info->voice_delete(voice);
+
+/* delete shared instance */
+info->shared_delete(shared);
+
+/* delete plugin descriptor */
+info->plugin_exit(info);
+
+/* close plugin library */
+FreeLibrary(dllHandle);
+
+```
+
+
+
 ## Example plugin
 see [fx_example](https://github.com/bsp2/stfx/blob/master/plugins/fx/fx_example/fx_example.c)
 
