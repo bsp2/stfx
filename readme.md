@@ -94,8 +94,8 @@ if(info->num_mods > 0u)
 /* prepare first audio chunk after note on (set up initial parameter/modulation interpolation) */
 info->prepare_block(voice,
                     0u/*numFrames. 0u=first chunk*/,
-                    freqHz/*0..n Hz*/,
-                    freqNote/*0..127 (MIDI note with fractional part)*/,
+                    freqHz/*0..n Hz. if unsure pass 261.63 (middle C)*/,
+                    freqNote/*0..127 (MIDI note with fractional part. if unsure pass 5*12=60 (middle C))*/,
                     vol/*0..1*/,
                     pan/*-1..1*/
                     );
