@@ -56,7 +56,7 @@ There are a few reserved bytes in each struct for future extensions. These shoul
 
 The following applications can currently load `stfx` plugins:
 
-- `Eureka` software sampler / synth, see (miditracker.org)[http://miditracker.org]
-- `Cycle` modular softsynth, see (miditracker.org)[http://miditracker.org]
+- `Eureka` software sampler / synth, see [miditracker.org](http://miditracker.org)
+- `Cycle` modular softsynth, see [miditracker.org](http://miditracker.org)
 
 At the moment there are ~100 plugins available.
