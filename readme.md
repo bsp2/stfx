@@ -85,7 +85,7 @@ info->note_on(voice,
 if(info->num_params > 0u)
   info->set_param_value(shared, 0u/*paramIdx*/, 0.5f/*value*/);
   
-/* modulate a parameter (host must check that modulation slot exists)
+/* modulate a parameter (host must check that modulation slot exists) */
 if(info->num_mods > 0u)
   info->set_mod_value(voice, 0u/*modIdx*/, -0.25f/*value*/, 0u/*frameOff*/);
 
