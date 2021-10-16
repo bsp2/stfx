@@ -38,16 +38,21 @@ There are three fundamental data structures:
 ### st_plugin_voice_t
 
 - per voice instance (see `struct st_plugin_voice_s`)
-- must be first field in a _derived_ myplugin_voice struct
+- must be the first field in a _derived_ myplugin_voice struct
 - up to 8 modulation slots (usually in the range -1..1)
 - `myplugin_voice_t *voice = info->voice_new(info)`
 - `info->voice_delete(voice)` frees the voice instance
 - voices must be freed before freeing the shared instance
 
 
+## Example plugin
+see [fx_example](https://github.com/bsp2/stfx/blob/master/plugins/fx/fx_example/fx_example.c)
+
+
 ## Status
 
-The interface can be considered stable. There are a few reserved bytes in each struct for future extensions. These should be set to 0.
+The interface can be considered stable.
+There are a few reserved bytes in each struct for future extensions. These should be set to 0.
 
 The following applications can currently load `stfx` plugins:
 
