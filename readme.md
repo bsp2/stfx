@@ -101,14 +101,14 @@ info->prepare_block(voice,
 /* prepare next audio chunk (1..n frames) */
 /*  (e.g. update per-sample-frame parameter/modulation interpolation) */
 info->prepare_block(voice,
-                    1u/*numFramesPerChunk*/,
+                    1u/*numFrames*/,
                     freqHz,
                     freqNote,
                     vol,
                     pan
                     );
 
-/* render interleaved stereo buffer */
+/* render interleaved stereo buffer (single stereo sample frame) */
 ioBuf[0] = ioBuf[1] = 0.0f;
 voice->voice_bus_read_offset = 0u;
 voice->voice_bus_buffers = NULL;
