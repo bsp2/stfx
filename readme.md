@@ -53,11 +53,11 @@ There are three fundamental data structures:
 /* open DLL/SO and query st_plugin_init() function address (platform-specific) */
 #ifdef _MSC_VER
 // Windows
-HINSTANCE dllHandle = LoadLibrary(pathName);
+HINSTANCE dllHandle = LoadLibrary("myplugin.dll"/*pathName*/);
 FARPROC fxnHandle = GetProcAddress(dllHandle, "st_plugin_init");
 #else
 // Linux / MacOS
-void *dllHandle = dlopen(_pathName, RTLD_NOW/*flags*/)
+void *dllHandle = dlopen("myplugin.so"/*pathName*/, RTLD_NOW/*flags*/)
 void *fxnHandle = dlsym(dllHandle, "st_plugin_init");
 #endif
 st_plugin_init_fxn_t initFxn = (st_plugin_init_fxn_t)fxnHandle;
