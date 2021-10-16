@@ -31,7 +31,7 @@ There are three fundamental data structures:
 
 - plugin instance that is common to all voices (see `struct st_plugin_shared_s`)
 - must be the first field in a _derived_ myplugin_shared struct
-- up to 8 normalized (0..1) float parameters (see set_param_value())
+- 8 normalized (0..1) float parameters (see set_param_value())
 - `myplugin_shared_t *shared = info->shared_new(info)`
 - `info->shared_delete(shared)` frees the shared plugin instance
 - shared instance must be freed before freeing the plugin descriptor (info)
@@ -40,7 +40,7 @@ There are three fundamental data structures:
 
 - per voice instance (see `struct st_plugin_voice_s`)
 - must be the first field in a _derived_ myplugin_voice struct
-- up to 8 modulation slots (usually in the range -1..1)
+- 8 modulation slots (usually in the range -1..1)
 - (optional) support for up to 32 voice buses, e.g. for cross-voice modulation
 - `myplugin_voice_t *voice = info->voice_new(info)`
 - `info->voice_delete(voice)` frees the voice instance
