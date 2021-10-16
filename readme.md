@@ -20,7 +20,7 @@ There are three fundamental data structures:
 ### st_plugin_info_t:
 
 - plugin descriptor (see `struct st_plugin_info_s`)
-- must be the first field in a "derived" myplugin_info struct
+- must be the first field in a _derived_ myplugin_info struct
 - `myplugin_info_t *info = st_plugin_init(pluginIdx)`
     - `st_plugin_init` is the main (and only) DLL/SO plugin entry point
 - a single DLL may contain many plugins: simply call `st_plugin_init(pluginIdx++)` until it returns NULL
@@ -29,7 +29,7 @@ There are three fundamental data structures:
 ### st_plugin_shared_t:
 
 - plugin instance that is common to all voices (see `struct st_plugin_shared_s`)
-- must be the first field in a "derived" myplugin_shared struct
+- must be the first field in a _derived_ myplugin_shared struct
 - up to 8 normalized (0..1) float parameters (see set_param_value())
 - `myplugin_shared_t *shared = info->shared_new(info)`
 - `info->shared_delete(shared)` frees the shared plugin instance
@@ -38,7 +38,7 @@ There are three fundamental data structures:
 ### st_plugin_voice_t
 
 - per voice instance (see `struct st_plugin_voice_s`)
-- must be first field in "derived" myplugin_voice struct
+- must be first field in a _derived_ myplugin_voice struct
 - up to 8 modulation slots (usually in the range -1..1)
 - `myplugin_voice_t *voice = info->voice_new(info)`
 - `info->voice_delete(voice)` frees the voice instance
