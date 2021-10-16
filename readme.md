@@ -51,7 +51,7 @@ There are three fundamental data structures:
 ``` c
 /* open DLL/SO and query st_plugin_init() function address (platform-specific) */
 HINSTANCE dllHandle = LoadLibrary(pathName);
-FARPROC fxnHandle = ::GetProcAddress(dllHandle, ""st_plugin_init");
+FARPROC fxnHandle = ::GetProcAddress(dllHandle, "st_plugin_init");
 st_plugin_init_fxn_t initFxn = (st_plugin_init_fxn_t)fxnHandle;
 
 /* get plugin descriptor for first sub-plugin */
@@ -83,7 +83,7 @@ info->prepare_block(voice,
                     );
                     
 /* prepare next audio chunk (1..n frames) */
-/*  (e.g. setup per-sample-frame parameter interpolation) */
+/*  (e.g. set up per-sample-frame parameter interpolation) */
 info->prepare_block(voice,
                     1u/*numFramesPerChunk*/,
                     freqHz,
