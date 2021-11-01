@@ -31,6 +31,8 @@
 #ifndef __ST_PLUGIN_INTERFACE_H__
 #define __ST_PLUGIN_INTERFACE_H__
 
+#include <string.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

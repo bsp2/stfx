@@ -13,7 +13,7 @@
 // ----           see <http://smc2017.aalto.fi/media/materials/proceedings/SMC17_p336.pdf>
 // ----
 // ---- created: 07Jun2020
-// ---- changed: 08Jun2020
+// ---- changed: 08Jun2020, 01Nov2021
 // ----
 // ----
 // ----
@@ -25,6 +25,7 @@
 #include <math.h>
 #include <cmath>
 #include <limits>
+#include <new>
 
 #include "../../../plugin.h"
 

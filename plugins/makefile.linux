@@ -1,0 +1,30 @@
+
+NUM_JOBS:=10
+
+.PHONY: clean
+clean:
+	make -j$(NUM_JOBS) -C fx/fx_example          -f makefile.linux clean
+	make -j$(NUM_JOBS) -C fx/je_ringmod          -f makefile.linux clean
+	make -j$(NUM_JOBS) -C fx/je_wavefolder       -f makefile.linux clean
+	make -j$(NUM_JOBS) -C fx/lindenberg_research -f makefile.linux clean
+	make -j$(NUM_JOBS) -C fx/obxd_vcf            -f makefile.linux clean
+	make -j$(NUM_JOBS) -C fx/sql_bootyshifter    -f makefile.linux clean
+
+.PHONY: bin
+bin:
+	make -j$(NUM_JOBS) -C fx/fx_example          -f makefile.linux bin
+	make -j$(NUM_JOBS) -C fx/je_ringmod          -f makefile.linux bin
+	make -j$(NUM_JOBS) -C fx/je_wavefolder       -f makefile.linux bin
+	make -j$(NUM_JOBS) -C fx/lindenberg_research -f makefile.linux bin
+	make -j$(NUM_JOBS) -C fx/obxd_vcf            -f makefile.linux bin
+	make -j$(NUM_JOBS) -C fx/sql_bootyshifter    -f makefile.linux bin
+
+.PHONY: install
+install:
+	make -j$(NUM_JOBS) -C fx/fx_example          -f makefile.linux install
+	make -j$(NUM_JOBS) -C fx/je_ringmod          -f makefile.linux install
+	make -j$(NUM_JOBS) -C fx/je_wavefolder       -f makefile.linux install
+	make -j$(NUM_JOBS) -C fx/lindenberg_research -f makefile.linux install
+	make -j$(NUM_JOBS) -C fx/obxd_vcf            -f makefile.linux install
+	make -j$(NUM_JOBS) -C fx/sql_bootyshifter    -f makefile.linux install
+

@@ -1,11 +1,11 @@
 
-include $(TKS_ROOT)/install_msvc.mk
+#include $(TKS_ROOT)/install_linux.mk
 
 .cpp.o:
-	$(CPP) $(CPPFLAGS) $(OPTFLAGS_PLUGIN) $(DBGFLAGS) -c $< -o $@ 
+	$(CPP) $(CPPFLAGS) $(OPTFLAGS) $(DBGFLAGS) -fPIC -c $< -o $@ 
 
 .c.o:
-	$(CC) $(CFLAGS) $(OPTFLAGS_PLUGIN) $(DBGFLAGS) -c $< -o $@ 
+	$(CC) $(CFLAGS) $(OPTFLAGS) $(DBGFLAGS) -fPIC -c $< -o $@ 
 
 
 .PHONY: bin
