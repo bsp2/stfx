@@ -1,0 +1,25 @@
+
+TARGET=befaco_noise_plethora
+TARGET_DIR := $(TARGET_DIR)/osc
+
+CPPFLAGS += -Inoise-plethora/teensy/
+
+ALL_OBJ= \
+   noise-plethora/plugins/Banks.o \
+   noise-plethora/teensy/effect_bitcrusher.o \
+   noise-plethora/teensy/effect_combine.o \
+   noise-plethora/teensy/effect_flange.o \
+   noise-plethora/teensy/effect_freeverb.o \
+   noise-plethora/teensy/effect_granular.o \
+   noise-plethora/teensy/effect_multiply.o \
+   noise-plethora/teensy/effect_wavefolder.o \
+   noise-plethora/teensy/filter_variable.o \
+   noise-plethora/teensy/synth_pinknoise.o \
+   noise-plethora/teensy/synth_pwm.o \
+   noise-plethora/teensy/synth_whitenoise.o \
+   noise-plethora/random.o \
+	ab.o \
+	c_white.o \
+	c_grit.o \
+	np_svf.o \
+	befaco_noise_plethora.o
