@@ -1,14 +1,14 @@
 // ----
 // ---- file   : dly_2.cpp
 // ---- author : Bastian Spiegel <bs@tkscript.de>
-// ---- legal  : (c) 2020 by Bastian Spiegel. 
+// ---- legal  : (c) 2020-2022 by Bastian Spiegel. 
 // ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See 
 // ----          http://www.gnu.org/licenses/licenses.html#LGPL or COPYING for further information.
 // ----
 // ---- info   : a cross feedback delay line
 // ----
 // ---- created: 24May2020
-// ---- changed: 25May2020, 31May2020, 08Jun2020
+// ---- changed: 25May2020, 31May2020, 08Jun2020, 05Jan2022
 // ----
 // ----
 // ----
@@ -284,7 +284,7 @@ static void ST_PLUGIN_API loc_process_replace(st_plugin_voice_t  *_voice,
       float outL = voice->dly_l.readLinear(voice->mod_time_l_cur);
 
       float r = _samplesIn[k + 1u];
-      voice->dly_r.push(l + lastOutL * voice->mod_fb_l2r_cur, voice->mod_fb_r_cur);
+      voice->dly_r.push(r + lastOutL * voice->mod_fb_l2r_cur, voice->mod_fb_r_cur);
       float outR = voice->dly_r.readLinear(voice->mod_time_r_cur);
 
       outL = l + (outL - l) * voice->mod_drywet_cur;
