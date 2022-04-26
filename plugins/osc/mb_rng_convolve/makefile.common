@@ -1,0 +1,7 @@
+TARGET=mb_rng_convolve
+TARGET_DIR := $(TARGET_DIR)/osc
+
+CPPFLAGS +=
+
+ALL_OBJ= \
+	mb_rng_convolve.o

@@ -10,6 +10,7 @@ clean:
 	make -j$(NUM_JOBS) -C fx/obxd_vcf               -f makefile.msvc clean
 	make -j$(NUM_JOBS) -C fx/sql_bootyshifter       -f makefile.msvc clean
 	make -j$(NUM_JOBS) -C osc/befaco_noise_plethora -f makefile.msvc clean
+	make -j$(NUM_JOBS) -C osc/mb_rng_convolve       -f makefile.msvc clean
 
 .PHONY: bin
 bin:
@@ -20,6 +21,7 @@ bin:
 	make -j$(NUM_JOBS) -C fx/obxd_vcf               -f makefile.msvc bin
 	make -j$(NUM_JOBS) -C fx/sql_bootyshifter       -f makefile.msvc bin
 	make -j$(NUM_JOBS) -C osc/befaco_noise_plethora -f makefile.msvc bin
+	make -j$(NUM_JOBS) -C osc/mb_rng_convolve       -f makefile.msvc bin
 
 .PHONY: install
 install:
@@ -30,5 +32,6 @@ install:
 	make -j$(NUM_JOBS) -C fx/obxd_vcf               -f makefile.msvc install
 	make -j$(NUM_JOBS) -C fx/sql_bootyshifter       -f makefile.msvc install
 	make -j$(NUM_JOBS) -C osc/befaco_noise_plethora -f makefile.msvc install
+	make -j$(NUM_JOBS) -C osc/mb_rng_convolve       -f makefile.msvc install
 
 
