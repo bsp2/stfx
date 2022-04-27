@@ -20,7 +20,7 @@
 // ----
 // ---- info   : GM's RNG convolver (see https://gearspace.com/board/attachments/electronic-music-instruments-and-electronic-music-production/1014442d1650910676-novel-old-1970s-style-anolge-physical-modeling-efficient-real-time-pulse-convolution-synthesis.pdf)
 // ---- created: 26Apr2022
-// ---- changed: 
+// ---- changed: 27Apr2022
 // ----
 // ----
 // ----
@@ -28,7 +28,6 @@
 #include "../../../plugin.h"
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <math.h>
 #include <string.h>
 
@@ -56,8 +55,6 @@ static void lfsr_init(lfsr_t *_lfsr, unsigned int _seed, unsigned int _numPre) {
    _lfsr->state = _seed;
    for(unsigned int i = 0u; i < _numPre; i++)
       lfsr_rands(_lfsr);
-   // printf("xxx lfsr_init: state=0x%08x\n", _lfsr->state);
-   // fflush(stdout);
 }
 
 
@@ -145,6 +142,8 @@ typedef struct gm_rng_convolve_voice_s {
    float             mod_scl1_inc;
    float             mod_scl2_cur;
    float             mod_scl2_inc;
+   float             hpf_z1;
+   float             hpf_z2;
 } gm_rng_convolve_voice_t;
 
 static const char *ST_PLUGIN_API loc_get_param_name(st_plugin_info_t *_info,
@@ -215,6 +214,33 @@ static void ST_PLUGIN_API loc_set_mod_value(st_plugin_voice_t *_voice,
    voice->mods[_modIdx] = _value;
 }
 
+static void loc_next_cycle(gm_rng_convolve_voice_t *voice) {
+   unsigned int seed;
+
+   seed = 1u + (unsigned int) (voice->mod_seed1_cur * 0x7fffFFFe);
+   lfsr_init(&voice->lfsr_1, seed, 8u/*numPre*/);
+
+   seed = 1u + (unsigned int) (voice->mod_seed2_cur * 0x7fffFFFe);
+   lfsr_init(&voice->lfsr_2, seed, 8u/*numPre*/);
+
+   seed = 1u + (unsigned int) (voice->mod_seed3_cur * 0x7fffFFFe);
+   lfsr_init(&voice->lfsr_3, seed, 8u/*numPre*/);
+
+   if(voice->cycle_idx > voice->cycle_len)
+   {
+      unsigned int skip = voice->cycle_idx - voice->cycle_len;
+      for(unsigned int i = 0u; i < skip; i++)
+      {
+         (void)lfsr_rands(&voice->lfsr_1);
+         (void)lfsr_rands(&voice->lfsr_2);
+         (void)lfsr_rands(&voice->lfsr_3);
+      }
+      voice->cycle_idx = skip;
+   }
+   else
+      voice->cycle_idx = 0u;
+}
+
 static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
                                             unsigned int       _numFrames,
                                             float              _freqHz,
@@ -258,6 +284,9 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
       voice->mod_seed3scl_inc = (modSeed3Scl - voice->mod_seed3scl_cur) * recBlockSize;
       voice->mod_scl1_inc     = (modScl1 - voice->mod_scl1_cur) * recBlockSize;
       voice->mod_scl2_inc     = (modScl2 - voice->mod_scl2_cur) * recBlockSize;
+
+      if(voice->cycle_idx > voice->cycle_len) // vibrato
+         loc_next_cycle(voice);
    }
    else
    {
@@ -280,8 +309,8 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
       voice->mod_scl2_inc = 0.0f;
 
       voice->cycle_idx = 0u;  // Oscillator reset
-      // printf("xxx freqHz=%f sr=%f cycle_len=%u\n", _freqHz, voice->sample_rate, voice->cycle_len);
-      // fflush(stdout);
+      voice->hpf_z1 = 0.0f;
+      voice->hpf_z2 = 0.0f;
    }
 }
 
@@ -304,19 +333,7 @@ static void ST_PLUGIN_API loc_process_replace(st_plugin_voice_t  *_voice,
       float out;
 
       if(0u == (voice->cycle_idx % voice->cycle_len))
-      {
-         unsigned int seed;
-         voice->cycle_idx = 0u;
-
-         seed = 1u + (unsigned int) (voice->mod_seed1_cur * 0x7fffFFFe);
-         lfsr_init(&voice->lfsr_1, seed, 8u/*numPre*/);
-
-         seed = 1u + (unsigned int) (voice->mod_seed2_cur * 0x7fffFFFe);
-         lfsr_init(&voice->lfsr_2, seed, 8u/*numPre*/);
-
-         seed = 1u + (unsigned int) (voice->mod_seed3_cur * 0x7fffFFFe);
-         lfsr_init(&voice->lfsr_3, seed, 8u/*numPre*/);
-      }
+         loc_next_cycle(voice);
 
       float r1 = (lfsr_randf(&voice->lfsr_1, 2.0f/*max*/) - 1.0f) * voice->mod_seed1scl_cur;
       float r2 = (lfsr_randf(&voice->lfsr_2, 2.0f/*max*/) - 1.0f) * voice->mod_seed2scl_cur;
@@ -326,6 +343,15 @@ static void ST_PLUGIN_API loc_process_replace(st_plugin_voice_t  *_voice,
       float r2mr3 = (r2 - r3) * voice->mod_scl2_cur;
 
       out = r2mr3 - r1mr2;
+
+      // hpf
+      // static const float hpf[4] = { 0.221789f, -0.443577f,  0.116223f, 0.003377f };
+      // static const float hpf[4] = { 0.198638f, -0.397276f, 0.217248f, 0.011799f };
+      static const float hpf[4] = { 0.476518f, -0.953036f, -0.761211f, 0.144861f };
+      float t = out;
+      out = t * hpf[0] + voice->hpf_z1;
+      voice->hpf_z1 = t * hpf[1] + voice->hpf_z2 - out * hpf[2];
+      voice->hpf_z2 = t * hpf[1]                 - out * hpf[3];
 
       if(out > 1.0f)
          out = 1.0f;
