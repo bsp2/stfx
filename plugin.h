@@ -1,21 +1,21 @@
 // ----
 // ---- file   : plugin.h
 // ---- legal  : Distributed under terms of the MIT license (https://opensource.org/licenses/MIT)
-// ----          Copyright 2020 by bsp
+// ----          Copyright 2020-2023 by bsp
 // ----
-// ----          Permission is hereby granted, free of charge, to any person obtaining a copy of this software and 
-// ----          associated documentation files (the "Software"), to deal in the Software without restriction, including 
-// ----          without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
-// ----          copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to 
+// ----          Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+// ----          associated documentation files (the "Software"), to deal in the Software without restriction, including
+// ----          without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// ----          copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to
 // ----          the following conditions:
-// ----  
-// ----          The above copyright notice and this permission notice shall be included in all copies or substantial 
+// ----
+// ----          The above copyright notice and this permission notice shall be included in all copies or substantial
 // ----          portions of the Software.
 // ----
 // ----          THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
 // ----          NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 // ----          IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-// ----          WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
+// ----          WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // ----          SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ----
 // ----
@@ -23,7 +23,7 @@
 // ----
 // ---- created: 16May2020
 // ---- changed: 17May2020, 18May2020, 19May2020, 20May2020, 24May2020, 31May2020, 06Jun2020
-// ----          08Jun2020, 16Aug2021
+// ----          08Jun2020, 16Aug2021, 03Sep2023, 30Nov2023, 04Dec2023
 // ----
 // ----
 // ----
@@ -210,7 +210,7 @@ struct st_plugin_info_s {
                                            st_sampleplayer_handle_t _samplePlayer,
                                            unsigned int             _polyphony
                                            );
-   
+
    // Set parent sample bank (zone) (opaque handle)
    //  - fxn pointer can be NULL if plugin is not interested in sample info
    void (ST_PLUGIN_API *set_samplebank) (st_plugin_voice_t     *_voice,
@@ -229,7 +229,7 @@ struct st_plugin_info_s {
    void (ST_PLUGIN_API *set_sample_rate) (st_plugin_voice_t *_voice,
                                           float              _sampleRate
                                           );
-   
+
    // Query parameter name
    //  - displayed in the UI
    //  - UTF-8 encoded string (please try to use ASCII, though)
@@ -328,8 +328,9 @@ struct st_plugin_info_s {
                                         );
 
    // Handle note-on
-   //  - 'bGlide' is true when voice portamento / glissando is active
+   //  - 'bGlide' is true (1) when voice portamento / glissando is active
    //     - plugin may skip state reset when glide is active
+   //     - 'bGlide' is maybe (-1) when 'smp' reset is enabled (=> glide note but restart envs)
    //  - 'note' is the MIDI note number (0..127)
    //  - 'vel' is the normalized velocity (0..1)
    //  - (note) additional info can be read from the voice base struct (layer_idx etc)
@@ -371,7 +372,7 @@ struct st_plugin_info_s {
    void (ST_PLUGIN_API *process_replace) (st_plugin_voice_t  *_voice,
                                           int                 _bMonoIn,
                                           const float        *_samplesIn,
-                                          float              *_samplesOut, 
+                                          float              *_samplesOut,
                                           unsigned int        _numFrames
                                           );
 
@@ -383,6 +384,7 @@ struct st_plugin_info_s {
 
 
    // Create host-specific extended plugin instance (user interface)
+   //  - fxn pointer can be NULL
    //  - 'hostName' is a unique host name identifier
    //  - 'hostVersion' is the host version
    //  - 'hostInfo' is a host-specific struct/class pointer
@@ -395,10 +397,83 @@ struct st_plugin_info_s {
 
    // Delete host-specific extended plugin instance (user interface)
    //  - called from UI thread
+   //  - fxn pointer can be NULL
    void (ST_PLUGIN_API *ui_delete) (st_ui_handle_t _uiInstanceHandle);
-   
 
-   void *_future[64 - 27];
+   // Query dynamic parameter name
+   //  - for plugins that can dynamically map internal parameters (per patch)
+   //  - can also be used to map (static or dynamic) parameter (preset) values to names
+   //  - fxn pointer can be NULL if the plugin has no, or just static parameters
+   //  - displayed in the UI
+   //  - UTF-8 encoded string (please try to use ASCII, though). Terminated by 0 ('ASCIIZ').
+   //  - length should not exceed 16 chars
+   //  - 'retBuf' points to a char buffer than can hold up to 'retBufSize' characters
+   //  - the function returns the number of characters written to 'retBuf' (last char is always 0)
+   //  - host implementations should fall back to get_param_name() when the fxn ptr is NULL
+   unsigned int (ST_PLUGIN_API *query_dynamic_param_name) (st_plugin_shared_t *_shared,
+                                                           const unsigned int  _paramIdx,
+                                                           char               *_retBuf,
+                                                           const unsigned int  _retBufSize
+                                                           );
+
+   // Query dynamic modulation target name
+   //  - for plugins that can dynamically map internal parameters (per patch)
+   //  - fxn pointer can be NULL if the plugin has no, or just static modulation targets
+   //  - displayed in the UI
+   //  - UTF-8 encoded string (please try to use ASCII, though). Terminated by 0 ('ASCIIZ').
+   //  - length should not exceed 16 chars
+   //  - 'retBuf' points to a char buffer than can hold up to 'retBufSize' characters
+   //  - the function returns the number of characters written to 'retBuf' (last char is always 0)
+   //  - host implementations should fall back to get_mod_name() when the fxn ptr is NULL
+   unsigned int (ST_PLUGIN_API *query_dynamic_mod_name) (st_plugin_shared_t *_shared,
+                                                         const unsigned int  _modIdx,
+                                                         char               *_retBuf,
+                                                         const unsigned int  _retBufSize
+                                                         );
+
+   // Query parameter preset values
+   //  - fxn pointer can be NULL (no presets)
+   //  - caller ensures that 'paramIdx' is in range 0..(num_params-1)
+   //  - 'retValues' points to an array that can hold up to 'retValuesSize' 32bit float values
+   //  - the function returns the number of preset values written to 'retValues'
+   //  - when 'retValues' is NULL, the function returns the total number of values it wants to write
+   unsigned int (ST_PLUGIN_API *query_dynamic_param_preset_values) (st_plugin_shared_t *_shared,
+                                                                    const unsigned int  _paramIdx,
+                                                                    float              *_retValues,
+                                                                    const unsigned int  _retValuesSize
+                                                                    );
+
+   // Query parameter preset name
+   //  - fxn pointer can be NULL (no presets)
+   //  - caller ensures that 'paramIdx' is in range 0..(num_params-1)
+   //  - 'presetIdx' is in range 0..(query_dynamic_param_preset_values() return value - 1)
+   //  - 'retBuf' points to a char buffer than can hold up to 'retBufSize' characters
+   //  - the function returns the number of characters written to 'retBuf' (last char is always 0)
+   //  - when 'retBuf' is NULL, the function returns the total number of characters required (including ASCIIZ)
+   unsigned int (ST_PLUGIN_API *query_dynamic_param_preset_name) (st_plugin_shared_t *_shared,
+                                                                  const unsigned int  _paramIdx,
+                                                                  const unsigned int  _presetIdx,
+                                                                  char               *_retBuf,
+                                                                  const unsigned int  _retBufSize
+                                                                  );
+
+   // Query parameter group name
+   //  - fxn pointer can be NULL (no parameter groups)
+   //  - parameter group indices are in the range 0..(num_groups-1)
+   //  - caller finishes group names queries when this function returns NULL
+   const char * (ST_PLUGIN_API *get_param_group_name) (st_plugin_info_t   *_info,
+                                                       const unsigned int  _paramGroupIdx
+                                                       );
+
+   // Query parameter group assignment
+   //  - fxn pointer can be NULL (no parameter groups)
+   //  - when the returned parameter group index (e.g. ~0u) can not be mapped to a parameter group name,
+   //     the parameter is not assigned to any group
+   unsigned int (ST_PLUGIN_API *get_param_group_idx) (st_plugin_info_t   *_info,
+                                                      const unsigned int  _paramIdx
+                                                      );
+
+   void *_future[64 - 37];
 };
 
 
@@ -407,9 +482,9 @@ struct st_plugin_info_s {
 //
 //  - must be the first field in actual/derived plugin structs
 //  - once instance per sample plugin slot
-//  - stores shared voice parameters
+//  - stores shared voice patch parameters
 //
-typedef struct st_plugin_shared_s {
+struct st_plugin_shared_s {
 
    // Reference to plugin info struct
    //  - must NOT be NULL
@@ -417,7 +492,7 @@ typedef struct st_plugin_shared_s {
 
    void *_future[16 - 1];
 
-} st_plugin_shared_t;
+};
 
 
 //
@@ -429,7 +504,7 @@ typedef struct st_plugin_shared_s {
 //     for cross modulation purposes
 //  - plugin implementations can store their voice state here
 //
-typedef struct st_plugin_voice_s {
+struct st_plugin_voice_s {
 
    // Reference to plugin info struct
    //  - must NOT be NULL
@@ -466,7 +541,7 @@ typedef struct st_plugin_voice_s {
 
    void *_future[16 - 8];
 
-} st_plugin_voice_t;
+};
 
 
 // Initialize and query plugin information
@@ -537,8 +612,9 @@ typedef st_plugin_info_t *(*ST_PLUGIN_API st_plugin_init_fxn_t) (unsigned int _p
       i--
 
 typedef union stplugin_fi_u {
-   float f;
+   float        f;
    unsigned int ui;
+   signed   int si;
 } stplugin_fi_t;
 
 typedef union stplugin_us8_u {
