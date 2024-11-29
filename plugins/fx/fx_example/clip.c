@@ -1,14 +1,14 @@
 // ----
 // ---- file   : clip.cpp
 // ---- author : Bastian Spiegel <bs@tkscript.de>
-// ---- legal  : (c) 2020 by Bastian Spiegel. 
+// ---- legal  : (c) 2020-2024 by Bastian Spiegel. 
 // ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See 
 // ----          http://www.gnu.org/licenses/licenses.html#LGPL or COPYING for further information.
 // ----
 // ---- info   : clipping amplifier
 // ----
 // ---- created: 31May2020
-// ---- changed: 08Jun2020
+// ---- changed: 08Jun2020, 21Jan2024
 // ----
 // ----
 // ----
@@ -197,6 +197,8 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
    modOffsetPost *= modNorm;
    modGain = 1.0f + (modGain - 1.0f) * modNorm;
 
+   // printf("xxx modMin=%f modMax=%f modGain=%f modOffset=(%f; %f)\n", modMin, modMax, modGain, modOffsetPre, modOffsetPost);
+
    if(_numFrames > 0u)
    {
       // lerp
@@ -294,6 +296,7 @@ static void ST_PLUGIN_API loc_process_replace(st_plugin_voice_t  *_voice,
 
          outL = l + (outL - l) * voice->mod_drywet_cur;
          outR = r + (outR - r) * voice->mod_drywet_cur;
+         // printf("xxx out=(%f; %f)\n", outL, outR);
          _samplesOut[k]      = outL;
          _samplesOut[k + 1u] = outR;
 
@@ -326,7 +329,8 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
    free((void*)_shared);
 }
 
-static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
+static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info, unsigned int _voiceIdx) {
+   (void)_voiceIdx;
    clip_voice_t *ret = (clip_voice_t *)malloc(sizeof(clip_voice_t));
    if(NULL != ret)
    {

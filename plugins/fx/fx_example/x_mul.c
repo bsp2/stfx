@@ -1,20 +1,21 @@
 // ----
 // ---- file   : x_mul.c
 // ---- author : Bastian Spiegel <bs@tkscript.de>
-// ---- legal  : (c) 2020 by Bastian Spiegel. 
+// ---- legal  : (c) 2020-2024 by Bastian Spiegel. 
 // ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See 
 // ----          http://www.gnu.org/licenses/licenses.html#LGPL or COPYING for further information.
 // ----
 // ---- info   : a simple voice bus ring modulator
 // ----
 // ---- created: 08Jun2020
-// ---- changed: 
+// ---- changed: 14Jan2024, 19Jan2024, 21Jan2024
 // ----
 // ----
 // ----
 
 #include <stdlib.h>
 #include <math.h>
+#include <stdio.h>
 
 #include "../../../plugin.h"
 
@@ -22,30 +23,40 @@
 #define PARAM_VOICEBUS  1
 #define PARAM_LVL_IN    2
 #define PARAM_LVL_BUS   3
-#define NUM_PARAMS      4
+#define PARAM_MIX_IN    4
+#define PARAM_MIX_BUS   5
+#define NUM_PARAMS      6
 static const char *loc_param_names[NUM_PARAMS] = {
    "Dry / Wet",
    "Voice Bus",
    "Lvl In",
-   "Lvl Bus"
+   "Lvl Bus",
+   "Mix In",
+   "Mix Bus"
 };
 static float loc_param_resets[NUM_PARAMS] = {
    1.0f,  // DRYWET
    0.0f,  // VOICEBUS (0=prev, 0.01=bus 1, 0.02=bus 2, ..0.32=bus 32)
-   1.0f,  // LVL_IN
-   1.0f,  // LVL_BUS
+   0.5f,  // LVL_IN
+   0.5f,  // LVL_BUS
+   0.5f,  // MIX_IN
+   0.5f,  // MIX_BUS
 };
 
 #define MOD_DRYWET    0
 #define MOD_VOICEBUS  1
 #define MOD_LVL_IN    2
 #define MOD_LVL_BUS   3
-#define NUM_MODS      4
+#define MOD_MIX_IN    4
+#define MOD_MIX_BUS   5
+#define NUM_MODS      6
 static const char *loc_mod_names[NUM_MODS] = {
    "Dry / Wet",
    "Voice Bus",
    "Lvl In",
    "Lvl Bus",
+   "Mix In",
+   "Mix Bus",
 };
 
 typedef struct x_mul_info_s {
@@ -67,6 +78,10 @@ typedef struct x_mul_voice_s {
    float        mod_lvl_in_inc;
    float        mod_lvl_bus_cur;
    float        mod_lvl_bus_inc;
+   float        mod_mix_in_cur;
+   float        mod_mix_in_inc;
+   float        mod_mix_bus_cur;
+   float        mod_mix_bus_inc;
 } x_mul_voice_t;
 
 
@@ -149,11 +164,12 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
    modDryWet = Dstplugin_clamp(modDryWet, 0.0f, 1.0f);
 
    float modVoiceBus = shared->params[PARAM_VOICEBUS] + voice->mods[MOD_VOICEBUS];
-   Dstplugin_voicebus(voice->mod_voicebus_idx, modVoiceBus);
+   Dstplugin_voicebus_f(voice->mod_voicebus_idx, modVoiceBus);
 
-   float modLvlIn = (shared->params[PARAM_LVL_IN]-0.5f)*2.0f + voice->mods[MOD_LVL_IN];
-
+   float modLvlIn  = (shared->params[PARAM_LVL_IN] -0.5f)*2.0f + voice->mods[MOD_LVL_IN];
    float modLvlBus = (shared->params[PARAM_LVL_BUS]-0.5f)*2.0f + voice->mods[MOD_LVL_BUS];
+   float modMixIn  = (shared->params[PARAM_MIX_IN] -0.5f)*2.0f + voice->mods[MOD_MIX_IN];
+   float modMixBus = (shared->params[PARAM_MIX_BUS]-0.5f)*2.0f + voice->mods[MOD_MIX_BUS];
 
    if(_numFrames > 0u)
    {
@@ -162,6 +178,8 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
       voice->mod_drywet_inc   = (modDryWet   - voice->mod_drywet_cur)   * recBlockSize;
       voice->mod_lvl_in_inc   = (modLvlIn    - voice->mod_lvl_in_cur)   * recBlockSize;
       voice->mod_lvl_bus_inc  = (modLvlBus   - voice->mod_lvl_bus_cur)  * recBlockSize;
+      voice->mod_mix_in_inc   = (modMixIn    - voice->mod_mix_in_cur)   * recBlockSize;
+      voice->mod_mix_bus_inc  = (modMixBus   - voice->mod_mix_bus_cur)  * recBlockSize;
    }
    else
    {
@@ -172,6 +190,10 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
       voice->mod_lvl_in_inc   = 0.0f;
       voice->mod_lvl_bus_cur  = modLvlBus;
       voice->mod_lvl_bus_inc  = 0.0f;
+      voice->mod_mix_in_cur   = modMixIn;
+      voice->mod_mix_in_inc   = 0.0f;
+      voice->mod_mix_bus_cur  = modMixBus;
+      voice->mod_mix_bus_inc  = 0.0f;
    }
 }
 
@@ -193,19 +215,41 @@ static void ST_PLUGIN_API loc_process_replace(st_plugin_voice_t  *_voice,
    // Stereo input, stereo output
    for(unsigned int i = 0u; i < _numFrames; i++)
    {
-      float l = _samplesIn[k];
-      float r = _samplesIn[k + 1u];
+      const float l = _samplesIn[k];
+      const float r = _samplesIn[k + 1u];
 
-      float busL = samplesBus[k];
-      float busR = samplesBus[k + 1u];
+      const float lAmp = l * voice->mod_lvl_in_cur;
+      const float rAmp = r * voice->mod_lvl_in_cur;
 
-      float outL = l * voice->mod_lvl_in_cur  *  busL * voice->mod_lvl_bus_cur;
-      float outR = r * voice->mod_lvl_in_cur  *  busR * voice->mod_lvl_bus_cur;
+      const float busL = samplesBus[k];
+      const float busR = samplesBus[k + 1u];
+
+      const float busLAmp = busL * voice->mod_lvl_bus_cur;
+      const float busRAmp = busR * voice->mod_lvl_bus_cur;
+
+      // printf("xxx bus[%u] = %f    l=%f\n", k, busL, l);
+
+      // (todo) combine mod_lvl_bus_cur * mod_lvl_in_cur
+      float outL =
+         (lAmp * busRAmp)
+         + (l    * voice->mod_mix_in_cur)
+         + (busL * voice->mod_mix_bus_cur)
+         ;
+      float outR =
+         (r * voice->mod_lvl_in_cur) * (busR * voice->mod_lvl_bus_cur)
+         + (r    * voice->mod_mix_in_cur)
+         + (busR * voice->mod_mix_bus_cur)
+         ;
 
       outL = l + (outL - l) * voice->mod_drywet_cur;
       outR = r + (outR - r) * voice->mod_drywet_cur;
+
+      // outL = busL;
+      // outR = busR;
+
       outL = Dstplugin_fix_denorm_32(outL);
       outR = Dstplugin_fix_denorm_32(outR);
+
       _samplesOut[k]      = outL;
       _samplesOut[k + 1u] = outR;
 
@@ -214,6 +258,8 @@ static void ST_PLUGIN_API loc_process_replace(st_plugin_voice_t  *_voice,
       voice->mod_drywet_cur  += voice->mod_drywet_inc;
       voice->mod_lvl_in_cur  += voice->mod_lvl_in_inc;
       voice->mod_lvl_bus_cur += voice->mod_lvl_bus_inc;
+      voice->mod_mix_in_cur  += voice->mod_mix_in_inc;
+      voice->mod_mix_bus_cur += voice->mod_mix_bus_inc;
    }
 
 }
@@ -233,7 +279,8 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
    free(_shared);
 }
 
-static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
+static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info, unsigned int _voiceIdx) {
+   (void)_voiceIdx;
    x_mul_voice_t *ret = malloc(sizeof(x_mul_voice_t));
    if(NULL != ret)
    {

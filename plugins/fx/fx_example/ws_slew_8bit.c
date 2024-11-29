@@ -1,14 +1,14 @@
 // ----
 // ---- file   : ws_slew_8bit.c
 // ---- author : Bastian Spiegel <bs@tkscript.de>
-// ---- legal  : (c) 2021 by Bastian Spiegel. 
+// ---- legal  : (c) 2021-2024 by Bastian Spiegel. 
 // ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See 
 // ----          http://www.gnu.org/licenses/licenses.html#LGPL or COPYING for further information.
 // ----
 // ---- info   : waveshaper with configurable rise/fall slew rates and log..lin..exp curve
 // ----
 // ---- created: 14Apr2021
-// ---- changed: 16Aug2021
+// ---- changed: 16Aug2021, 21Jan2024, 14Oct2024
 // ----
 // ----
 // ----
@@ -246,9 +246,9 @@ static float loc_mathLogLinExpf(float _f, float _c) {
    uSign.f = _f;
    stplugin_fi_t u;
    u.f = _f;
-   u.ui &= 0x7fffFFFFu;
+   u.u &= 0x7fffFFFFu;
    u.f = powf(u.f, powf(2.0f, _c));
-   u.ui |= uSign.ui & 0x80000000u;
+   u.u |= uSign.u & 0x80000000u;
    return u.f;
 }
 
@@ -295,7 +295,7 @@ static void ST_PLUGIN_API loc_process_replace(st_plugin_voice_t  *_voice,
    unsigned char ampInIdx  = (unsigned char) (voice->mod_amp_in_cur * 15);
    unsigned char ampOutIdx = (unsigned char) (voice->mod_amp_out_cur * 15);
 
-#if 1
+#if 0
    static int xxx = 0;
    if(0 == (++xxx & 16383))
    {
@@ -408,7 +408,8 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
    free(_shared);
 }
 
-static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
+static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info, unsigned int _voiceIdx) {
+   (void)_voiceIdx;
    ws_slew_8bit_voice_t *ret = malloc(sizeof(ws_slew_8bit_voice_t));
    if(NULL != ret)
    {
@@ -533,7 +534,7 @@ st_plugin_info_t *ws_slew_8bit_init(void) {
                   f = 1.0f;
                else if(f < -1.0f)
                   f = -1.0f;
-               i8.s = f * 127.0f;
+               i8.s = (char)(f * 127.0f);
                // printf(" amp[%d][%d]: %d => %d\n", ampStep, valIdx, i8.s, i8.s);
                stplugin_us16_t i16;
                i16.s = (short)(f * 16383.0f);

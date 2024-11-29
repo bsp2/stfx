@@ -1,7 +1,7 @@
 // ----
 // ---- file   : x_ladder_lpf_x4.cpp
 // ---- author : Bastian Spiegel <bs@tkscript.de>
-// ---- legal  : (c) 2020 by Bastian Spiegel. 
+// ---- legal  : (c) 2020-2024 by Bastian Spiegel. 
 // ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See 
 // ----          http://www.gnu.org/licenses/licenses.html#LGPL or COPYING for further information.
 // ----
@@ -9,7 +9,7 @@
 // ----           see <http://musicdsp.org/showArchiveComment.php?ArchiveID=24>
 // ----
 // ---- created: 05Jun2020
-// ---- changed: 08Jun2020, 09Jun2020
+// ---- changed: 08Jun2020, 09Jun2020, 19Jan2024, 21Jan2024
 // ----
 // ----
 // ----
@@ -217,7 +217,7 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
    modQ = Dstplugin_clamp(modQ, 0.0f, 1.0f);
 
    float modVoiceBus = shared->params[PARAM_VOICEBUS];
-   Dstplugin_voicebus(voice->mod_voicebus_idx, modVoiceBus);
+   Dstplugin_voicebus_f(voice->mod_voicebus_idx, modVoiceBus);
 
    float modBusLvl = (shared->params[PARAM_BUSLEVEL]-0.5f)*2.0f + voice->mods[MOD_BUSLEVEL];
 
@@ -356,7 +356,8 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
    free((void*)_shared);
 }
 
-static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
+static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info, unsigned int _voiceIdx) {
+   (void)_voiceIdx;
    x_ladder_lpf_x4_voice_t *ret = (x_ladder_lpf_x4_voice_t *)malloc(sizeof(x_ladder_lpf_x4_voice_t));
    if(NULL != ret)
    {

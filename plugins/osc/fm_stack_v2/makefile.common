@@ -1,0 +1,27 @@
+TARGET=osc_fm_stack_v2
+TARGET_DIR := $(TARGET_DIR)/osc
+
+CPPFLAGS +=
+# -DSAVE
+
+ALL_OBJ=       \
+	lores.o     \
+	loresh.o    \
+	medres.o    \
+	medresh.o   \
+	medreshpe.o \
+	hires.o     \
+	hiresle.o   \
+	hireslm.o   \
+	curves.o    \
+	biquad.o    \
+	main.o
+
+# noisy, or quality gains do not justify increased CPU usage
+EXPERIMENTAL_OBJ= \
+	ulores.o    \
+	vlores.o    \
+	vhires.o    \
+	uhires.o    
+
+#ALL_OBJ+= $(EXPERIMENTAL_OBJ)

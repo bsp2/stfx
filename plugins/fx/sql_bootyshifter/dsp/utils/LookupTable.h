@@ -6,7 +6,9 @@
 #include <assert.h>
 #include <cmath>
 #include <memory>
+#ifdef ARCH_X64
 #include <emmintrin.h>
+#endif // ARCH_X64
 #include <functional>
 
 template <typename T> class LookupTableParams;
@@ -173,15 +175,23 @@ inline void LookupTable<T>::initDiscrete(LookupTableParams<T>& params, int numEn
 template<>
 inline int LookupTable<double>::cvtt(double* input)
 {
+#ifdef ARCH_X64
     auto x = _mm_load_sd(input);
     return _mm_cvttsd_si32(x);
+#else
+    return (int)*input;
+#endif // ARCH_X64
 }
 
 template<>
 inline int LookupTable<float>::cvtt(float* input)
 {
+#ifdef ARCH_X64
     auto x = _mm_load_ss(input);
     return _mm_cvttss_si32(x);
+#else
+    return (int)*input;
+#endif // ARCH_X64
 }
 
 /***************************************************************************/

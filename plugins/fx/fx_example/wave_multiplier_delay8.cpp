@@ -1,14 +1,14 @@
 // ----
 // ---- file   : wave_multiplier_delay8.cpp
 // ---- author : Bastian Spiegel <bs@tkscript.de>
-// ---- legal  : (c) 2021 by Bastian Spiegel. 
+// ---- legal  : (c) 2021-2024 by Bastian Spiegel. 
 // ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See 
 // ----          http://www.gnu.org/licenses/licenses.html#LGPL or COPYING for further information.
 // ----
 // ---- info   : pseudo phase shifter
 // ----
 // ---- created: 13Oct2021
-// ---- changed: 
+// ---- changed: 21Jan2024
 // ----
 // ----
 // ----
@@ -240,8 +240,8 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
    float maxMs = (float(ST_DELAY_SIZE) / 88.200f);    // maxMs @ 88.2kHz = ~11.6099773243ms
    float maxFrames = maxMs * (voice->sample_rate / 1000.0f);
 
-   static int xxx = 0;
-   xxx++;
+   // static int xxx = 0;
+   // xxx++;
 
    for(unsigned int partIdx = 0u; partIdx < MAX_PARTS; partIdx++)
    {
@@ -356,7 +356,8 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
    free((void*)_shared);
 }
 
-static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
+static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info, unsigned int _voiceIdx) {
+   (void)_voiceIdx;
    wave_multiplier_delay8_voice_t *ret = (wave_multiplier_delay8_voice_t *)malloc(sizeof(wave_multiplier_delay8_voice_t));
    if(NULL != ret)
    {

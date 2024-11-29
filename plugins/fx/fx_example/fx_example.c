@@ -1,8 +1,8 @@
 // ----
 // ---- file   : fx_example.c
 // ---- author : Bastian Spiegel <bs@tkscript.de>
-// ---- legal  : (c) 2020-2021 by Bastian Spiegel. 
-// ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See 
+// ---- legal  : (c) 2020-2024 by Bastian Spiegel.
+// ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See
 // ----          http://www.gnu.org/licenses/licenses.html#LGPL or COPYING for further information.
 // ----
 // ---- info   : plugin entry point for tksampler voice plugin FX example
@@ -11,7 +11,7 @@
 // ---- changed: 17May2020, 18May2020, 19May2020, 20May2020, 21May2020, 24May2020, 25May2020
 // ----          26May2020, 31May2020, 01Jun2020, 02Jun2020, 06Jun2020, 07Jun2020, 08Jun2020
 // ----          09Jun2020, 08Feb2021, 11Feb2021, 23Feb2021, 14Apr2021, 02May2021, 31May2021
-// ----          16Aug2021, 13Oct2021, 14Oct2021
+// ----          16Aug2021, 13Oct2021, 14Oct2021, 04Jan2023, 30Mar2023, 27Sep2024, 08Nov2024
 // ----
 // ----
 // ----
@@ -97,27 +97,33 @@ ST_PLUGIN_APICALL st_plugin_info_t *ST_PLUGIN_API st_plugin_init(unsigned int _p
       case 68u: return abs_init                      ();
       case 69u: return rms_init                      ();
       case 70u: return ws_fold_wrap_init             ();
-      case 71u: return ws_fold_sine_init             ();
-      case 72u: return dly_1_fade_init               ();
-      case 73u: return dly_2_fade_init               ();
-      case 74u: return dly_flt_2_fade_init           ();
-      case 75u: return ws_flex_init                  ();
-      case 76u: return ws_flex_asym_init             ();
-      case 77u: return ws_slew_init                  ();
-      case 78u: return ws_slew_asym_init             ();
-      case 79u: return boost_init                    ();
-      case 80u: return eq3_init                      ();
-      case 81u: return ws_slew_8bit_init             ();
-      case 82u: return wave_multiplier_wrap_init     ();
-      case 83u: return wave_multiplier_reflect_init  ();
-      case 84u: return wave_multiplier_delay_init    ();
-      case 85u: return wave_multiplier_delay4_init   ();
-      case 86u: return wave_multiplier_delay8_init   ();
-      case 87u: return wave_multiplier_delay16_init  ();
-      case 88u: return wave_multiplier_allpass4_init ();
-      case 89u: return wave_multiplier_allpass8_init ();
-      case 90u: return wave_multiplier_apdly4_init   ();
-      case 91u: return wave_multiplier_apdly8_init   ();
+      case 71u: return ws_fold_wrap2_init            ();
+      case 72u: return ws_fold_sine_init             ();
+      case 73u: return dly_1_fade_init               ();
+      case 74u: return dly_2_fade_init               ();
+      case 75u: return dly_flt_2_fade_init           ();
+      case 76u: return ws_flex_init                  ();
+      case 77u: return ws_flex_asym_init             ();
+      case 78u: return ws_slew_init                  ();
+      case 79u: return ws_slew_asym_init             ();
+      case 80u: return ws_sin_exp_init               ();
+      case 81u: return boost_init                    ();
+      case 82u: return eq3_init                      ();
+      case 83u: return ws_slew_8bit_init             ();
+      case 84u: return wave_multiplier_wrap_init     ();
+      case 85u: return wave_multiplier_reflect_init  ();
+      case 86u: return wave_multiplier_delay_init    ();
+      case 87u: return wave_multiplier_delay4_init   ();
+      case 88u: return wave_multiplier_delay8_init   ();
+      case 89u: return wave_multiplier_delay16_init  ();
+      case 90u: return wave_multiplier_allpass4_init ();
+      case 91u: return wave_multiplier_allpass8_init ();
+      case 92u: return wave_multiplier_apdly4_init   ();
+      case 93u: return wave_multiplier_apdly8_init   ();
+      case 94u: return fold_init                     ();
+      case 95u: return modfm_init                    ();
+      case 96u: return dly_flt_2_mod_init            ();
+      case 97u: return ws_lin_cpx_init               ();
    }
 
    return NULL;

@@ -1,0 +1,43 @@
+
+include ../plugin_pre_macos.mk
+
+TARGET_DIR := $(TARGET_DIR)/cycle
+
+DIRS := ./
+ALL_SOURCES := $(foreach dir,$(DIRS),$(wildcard $(dir)/*.cpp))
+ALL_OBJ := $(notdir $(ALL_SOURCES:.cpp=.o))
+ALL_PLUGINS := $(notdir $(ALL_SOURCES:.cpp=.dylib))
+
+EXTRA_INCLUDES += -I../../
+
+%.o : %.cpp
+	$(CPP) $(CPPFLAGS) $(OPTFLAGS) $(DBGFLAGS) -fPIC -c $< -o $@ 
+
+%.dylib : %.o
+	$(CPP) -dynamiclib -o "$@" "$<" $(EXTRALIBS)
+ifneq ($(DEBUG),y)
+	$(STRIP) "$@"
+endif
+
+.PHONY: bin_obj
+bin: $(ALL_PLUGINS)
+	@echo "Build finished at `date +%H:%M`."
+
+# (note) avoids auto-cleanup of .o files
+.PHONY: bin_obj
+bin_obj: $(ALL_OBJ)
+
+.PHONY: install
+install:
+	$(CP) $(ALL_PLUGINS) "$(TARGET_DIR)/"
+
+.PHONY: clean
+clean:
+	$(RM) $(ALL_OBJ)
+	$(RM) $(ALL_PLUGINS)
+
+# utility target for copying auto-generated sources from Eureka plugin folder
+.PHONY: update
+update:
+	$(CP) ../../../tks-projects/eureka/voice_plugins/cycle/*.cpp .
+

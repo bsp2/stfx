@@ -32,10 +32,10 @@ bool updateIfDifferent (T& lhs, const T&& rhs)
 template<typename T>
 T exp(T exponent)
 {
-	static const T maxExponent = std::nextafter(std::log(std::numeric_limits<T>::max()), T(0));
-	static const T maxValue = std::exp(maxExponent);
+	static const T maxExponent = /*std*/::nextafter(/*std*/::log(std::numeric_limits<T>::max()), T(0));
+	static const T maxValue = /*std*/::exp(maxExponent);
 
-	return (exponent < maxExponent) ? std::exp(exponent) : maxValue;
+	return (exponent < maxExponent) ? /*std*/::exp(exponent) : maxValue;
 }
 
 template<typename T>

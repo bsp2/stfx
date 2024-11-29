@@ -22,4 +22,5 @@ install:
 
 .PHONY: clean
 clean:
-	$(RM) $(ALL_OBJ)
+	$(RM) $(ALL_OBJ) "$(TARGET).dll" "$(TARGET).map" "$(TARGET).lib" "$(TARGET).exp" "$(TARGET).so"
+

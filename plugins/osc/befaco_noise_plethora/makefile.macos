@@ -1,0 +1,8 @@
+
+include ../../plugin_pre_macos.mk
+
+CPPFLAGS+= -std=c++11 -Wno-unused-private-field
+
+include makefile.common
+
+include ../../plugin_post_macos.mk

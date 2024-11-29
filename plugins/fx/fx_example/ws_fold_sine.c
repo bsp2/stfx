@@ -1,14 +1,14 @@
 // ----
 // ---- file   : ws_fold_sine.c
 // ---- author : Bastian Spiegel <bs@tkscript.de>
-// ---- legal  : (c) 2020 by Bastian Spiegel. 
+// ---- legal  : (c) 2020-2024 by Bastian Spiegel. 
 // ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See 
 // ----          http://www.gnu.org/licenses/licenses.html#LGPL or COPYING for further information.
 // ----
 // ---- info   : a tanh waveshaper that supports per-sample-frame parameter interpolation
 // ----
 // ---- created: 08Feb2021
-// ---- changed: 
+// ---- changed: 21Jan2024, 19Sep2024
 // ----
 // ----
 // ----
@@ -167,7 +167,7 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
    modDrive = powf(10.0f, modDrive * 2.0f);
 
    float modBias = shared->params[PARAM_BIAS];
-   modBias = Dstplugin_val_to_range(modBias, 0.0f, 0.3f);
+   modBias = Dstplugin_scale(modBias, 0.0f, 0.3f);
    modBias += voice->mods[MOD_BIAS] * 0.3f;
    modBias = Dstplugin_clamp(modBias, 0.0f, 0.3f);  // <0 and >0.3: heavy distortion (=> clamp)
 
@@ -337,7 +337,8 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
    free(_shared);
 }
 
-static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
+static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info, unsigned int _voiceIdx) {
+   (void)_voiceIdx;
    ws_fold_sine_voice_t *ret = malloc(sizeof(ws_fold_sine_voice_t));
    if(NULL != ret)
    {

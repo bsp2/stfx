@@ -8,9 +8,15 @@ clean:
 	make -j$(NUM_JOBS) -C fx/je_wavefolder          -f makefile.linux clean
 	make -j$(NUM_JOBS) -C fx/lindenberg_research    -f makefile.linux clean
 	make -j$(NUM_JOBS) -C fx/obxd_vcf               -f makefile.linux clean
+	make -j$(NUM_JOBS) -C fx/schroederverb          -f makefile.linux clean
 	make -j$(NUM_JOBS) -C fx/sql_bootyshifter       -f makefile.linux clean
+	make -j$(NUM_JOBS) -C fx/valley_plateau         -f makefile.linux clean
 	make -j$(NUM_JOBS) -C osc/befaco_noise_plethora -f makefile.linux clean
 	make -j$(NUM_JOBS) -C osc/gm_rng_convolve       -f makefile.linux clean
+#	make -j$(NUM_JOBS) -C osc/lofi_fm_stack_v1      -f makefile.linux clean
+#	make -j$(NUM_JOBS) -C osc/fm_stack_v1           -f makefile.linux clean
+	make -j$(NUM_JOBS) -C osc/fm_stack_v2           -f makefile.linux clean
+	make -j$(NUM_JOBS) -C cycle                     -f makefile.linux clean
 
 .PHONY: bin
 bin:
@@ -19,9 +25,15 @@ bin:
 	make -j$(NUM_JOBS) -C fx/je_wavefolder          -f makefile.linux bin
 	make -j$(NUM_JOBS) -C fx/lindenberg_research    -f makefile.linux bin
 	make -j$(NUM_JOBS) -C fx/obxd_vcf               -f makefile.linux bin
+	make -j$(NUM_JOBS) -C fx/schroederverb          -f makefile.linux bin
 	make -j$(NUM_JOBS) -C fx/sql_bootyshifter       -f makefile.linux bin
+	make -j$(NUM_JOBS) -C fx/valley_plateau         -f makefile.linux bin
 	make -j$(NUM_JOBS) -C osc/befaco_noise_plethora -f makefile.linux bin
 	make -j$(NUM_JOBS) -C osc/gm_rng_convolve       -f makefile.linux bin
+#	make -j$(NUM_JOBS) -C osc/lofi_fm_stack_v1      -f makefile.linux bin
+#	make -j$(NUM_JOBS) -C osc/fm_stack_v1           -f makefile.linux bin
+	make -j$(NUM_JOBS) -C osc/fm_stack_v2           -f makefile.linux bin
+	make -j$(NUM_JOBS) -C cycle                     -f makefile.linux bin
 
 .PHONY: install
 install:
@@ -30,6 +42,18 @@ install:
 	make -j$(NUM_JOBS) -C fx/je_wavefolder          -f makefile.linux install
 	make -j$(NUM_JOBS) -C fx/lindenberg_research    -f makefile.linux install
 	make -j$(NUM_JOBS) -C fx/obxd_vcf               -f makefile.linux install
+	make -j$(NUM_JOBS) -C fx/schroederverb          -f makefile.linux install
 	make -j$(NUM_JOBS) -C fx/sql_bootyshifter       -f makefile.linux install
+	make -j$(NUM_JOBS) -C fx/valley_plateau         -f makefile.linux install
 	make -j$(NUM_JOBS) -C osc/befaco_noise_plethora -f makefile.linux install
 	make -j$(NUM_JOBS) -C osc/gm_rng_convolve       -f makefile.linux install
+##	make -j$(NUM_JOBS) -C osc/lofi_fm_stack_v1      -f makefile.linux install
+##	make -j$(NUM_JOBS) -C osc/fm_stack_v1           -f makefile.linux install
+	make -j$(NUM_JOBS) -C osc/fm_stack_v2           -f makefile.linux install
+	make -j$(NUM_JOBS) -C cycle                     -f makefile.linux install
+	@echo "voice-plugin install finished"
+
+# utility target for copying auto-generated sources from Eureka plugin folder
+.PHONY: update
+update:
+	make -j$(NUM_JOBS) -C cycle                     -f makefile.linux update

@@ -1,14 +1,14 @@
 // ----
 // ---- file   : wave_multiplier_apdly4.cpp
 // ---- author : Bastian Spiegel <bs@tkscript.de>
-// ---- legal  : (c) 2021 by Bastian Spiegel. 
+// ---- legal  : (c) 2021-2024 by Bastian Spiegel. 
 // ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See 
 // ----          http://www.gnu.org/licenses/licenses.html#LGPL or COPYING for further information.
 // ----
 // ---- info   : multiple randomized+modulated delay lines with allpass filter in feedback loop
 // ----
 // ---- created: 13Oct2021
-// ---- changed: 14Oct2021
+// ---- changed: 14Oct2021, 21Jan2024
 // ----
 // ----
 // ----
@@ -256,8 +256,8 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
    (void)_vol;
    (void)_pan;
 
-   static int xxx = 0;
-   xxx++;
+   // static int xxx = 0;
+   // xxx++;
 
    float modDryWet = shared->params[PARAM_DRYWET]   + voice->mods[MOD_DRYWET];
    modDryWet = Dstplugin_clamp(modDryWet, 0.0f, 1.0f);
@@ -448,7 +448,8 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
    free((void*)_shared);
 }
 
-static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
+static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info, unsigned int _voiceIdx) {
+   (void)_voiceIdx;
    wave_multiplier_apdly8_voice_t *ret = (wave_multiplier_apdly8_voice_t *)malloc(sizeof(wave_multiplier_apdly8_voice_t));
    if(NULL != ret)
    {

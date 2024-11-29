@@ -4,7 +4,7 @@
 // ---- info   : monophonic delay line
 // ----
 // ---- created: 24May2020
-// ---- changed: 13Oct2021
+// ---- changed: 13Oct2021, 27Sep2024
 // ----
 // ----
 // ----
@@ -16,20 +16,24 @@
 // ~743ms @44.1kHz
 #define ST_DELAY_SIZE  (32768u)
 #define ST_DELAY_MASK  (32767u)
+#else
+#ifndef ST_DELAY_MASK
+#define ST_DELAY_MASK (ST_DELAY_SIZE-1u)
+#endif // ST_DELAY_MASK
 #endif // ST_DELAY_SIZE
 
 struct StDelay {
    unsigned int io_offset;
    float        last_out;
    float        history[ST_DELAY_SIZE];
-      
+
    StDelay(void) {
       reset();
    }
 
    ~StDelay() {
    }
-   
+
    void reset(void) {
       io_offset = 0u;
       last_out  = 0.0f;
@@ -47,7 +51,7 @@ struct StDelay {
       io_offset = (io_offset + 1u) & ST_DELAY_MASK;
       history[io_offset] = _smp;
    }
-  
+
    float readNearest(unsigned int _offset) {
       _offset = (io_offset - _offset) & ST_DELAY_MASK;
       last_out = history[_offset];

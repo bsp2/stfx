@@ -1,7 +1,7 @@
 // ----
 // ---- file   : plugin.h
 // ---- legal  : Distributed under terms of the MIT license (https://opensource.org/licenses/MIT)
-// ----          Copyright 2020-2023 by bsp
+// ----          Copyright 2020-2024 by bsp
 // ----
 // ----          Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 // ----          associated documentation files (the "Software"), to deal in the Software without restriction, including
@@ -23,13 +23,14 @@
 // ----
 // ---- created: 16May2020
 // ---- changed: 17May2020, 18May2020, 19May2020, 20May2020, 24May2020, 31May2020, 06Jun2020
-// ----          08Jun2020, 16Aug2021, 03Sep2023, 30Nov2023, 04Dec2023
+// ----          08Jun2020, 16Aug2021, 03Sep2023, 30Nov2023, 04Dec2023, 22Dec2023, 06Jan2024
+// ----          19Jan2024, 21Jan2024, 08Feb2024, 15Feb2024, 10Aug2024, 19Sep2024, 07Nov2024
 // ----
 // ----
 // ----
 
-#ifndef __ST_PLUGIN_INTERFACE_H__
-#define __ST_PLUGIN_INTERFACE_H__
+#ifndef ST_PLUGIN_H__
+#define ST_PLUGIN_H__
 
 #include <string.h>
 
@@ -73,7 +74,8 @@ typedef void *st_ui_handle_t;
 
 
 // plugin api version
-#define ST_PLUGIN_API_VERSION  (1u)
+//  (note) 'voiceIdx' param added to voice_new() in v2
+#define ST_PLUGIN_API_VERSION  (2u)
 
 // flags: plugin implements a post-processing effect
 #define ST_PLUGIN_FLAG_FX               (1u << 0)
@@ -169,13 +171,15 @@ struct st_plugin_info_s {
    unsigned int category;
 
    // Number of parameters
-   //  - up to 8 (at the moment)
-   //  - for static configuration
+   //  - should not exceed 8 (if it does, the Eureka sampler displays an extended param editor dialog)
+   //  - for static (per plugin instance) configuration
    unsigned int num_params;
 
    // Number of modulation destinations
-   //  - up to 8 (at the moment)
+   //  - arbitrary number but limited to 8 in the Eureka sampler UI (mod matrix destinations)
    //  - can be targeted in the voice mod matrix
+   //  - typically used for relative parameter modulation (one 'mod' per 'param'), or to control macro modulation
+   //     (when the plugin has more parameters than modulations)
    unsigned int num_mods;
 
    // Create new (shared) plugin instance
@@ -183,7 +187,7 @@ struct st_plugin_info_s {
    //  - must return new plugin instance (dynamically allocated memory)
    //  - shared by all voices
    //  - stores common parameters
-   st_plugin_shared_t *(ST_PLUGIN_API *shared_new)    (st_plugin_info_t *_info);
+   st_plugin_shared_t *(ST_PLUGIN_API *shared_new) (st_plugin_info_t *_info);
 
    // Delete (shared) plugin instance
    //  - fxn pointer must NOT be NULL
@@ -195,7 +199,8 @@ struct st_plugin_info_s {
    //  - fxn pointer must NOT be NULL
    //  - must return new plugin instance (dynamically allocated memory)
    //  - stores voice modulation parameters and state
-   st_plugin_voice_t  *(ST_PLUGIN_API *voice_new)    (st_plugin_info_t *_info);
+   //  - the 'voiceIdx' (0..n) can e.g. be used to modulate random seeds
+   st_plugin_voice_t  *(ST_PLUGIN_API *voice_new) (st_plugin_info_t *_info, unsigned int _voiceIdx);
 
    // Delete (shared) plugin instance
    //  - fxn pointer must NOT be NULL
@@ -203,7 +208,7 @@ struct st_plugin_info_s {
    //  - called after all voice instances have been deleted
    void                (ST_PLUGIN_API *voice_delete) (st_plugin_voice_t *_voice);
 
-   // Set parent sample player (opaque handle)
+   // Set parent sample player (hint / opaque handle)
    //  - 'polyphony' is the maximum number of voices
    //  - fxn pointer can be NULL if plugin is not interested in sample player info
    void (ST_PLUGIN_API *set_sampleplayer) (st_plugin_voice_t       *_voice,
@@ -211,13 +216,13 @@ struct st_plugin_info_s {
                                            unsigned int             _polyphony
                                            );
 
-   // Set parent sample bank (zone) (opaque handle)
+   // Set parent sample bank (zone) (hint / opaque handle)
    //  - fxn pointer can be NULL if plugin is not interested in sample info
    void (ST_PLUGIN_API *set_samplebank) (st_plugin_voice_t     *_voice,
                                          st_samplebank_handle_t _sampleBank
                                          );
 
-   // Set parent sample (opaque handle)
+   // Set parent sample (hint / opaque handle)
    //  - fxn pointer can be NULL if plugin is not interested in sample info
    void (ST_PLUGIN_API *set_sample) (st_plugin_voice_t  *_voice,
                                      st_sample_handle_t  _sample
@@ -460,20 +465,153 @@ struct st_plugin_info_s {
    // Query parameter group name
    //  - fxn pointer can be NULL (no parameter groups)
    //  - parameter group indices are in the range 0..(num_groups-1)
-   //  - caller finishes group names queries when this function returns NULL
+   //  - caller should finish group names queries when this function returns NULL
    const char * (ST_PLUGIN_API *get_param_group_name) (st_plugin_info_t   *_info,
                                                        const unsigned int  _paramGroupIdx
                                                        );
 
    // Query parameter group assignment
    //  - fxn pointer can be NULL (no parameter groups)
+   //  - groups are used to classify parameters (e.g. "tune", "amp", "shape", ..)
    //  - when the returned parameter group index (e.g. ~0u) can not be mapped to a parameter group name,
    //     the parameter is not assigned to any group
    unsigned int (ST_PLUGIN_API *get_param_group_idx) (st_plugin_info_t   *_info,
                                                       const unsigned int  _paramIdx
                                                       );
 
-   void *_future[64 - 37];
+   // Query array parameter size
+   //  - fxn pointer can be NULL (no array parameters)
+   //  - the size should be in the range 1..256
+   unsigned int (ST_PLUGIN_API *get_array_param_size) (st_plugin_info_t   *_info,
+                                                       const unsigned int  _paramIdx
+                                                       );
+
+   // Query number of array parameter variations
+   //  - fxn pointer can be NULL (no array parameters)
+   //  - the number of variations should be in the range 1..32 (recommended: 8)
+   //  - (note) set_param_value() (and optionally set_mod_value()) sets the (normalized) variation index
+   //  - (note) plugins may internally store the effective (interpolated) array values per voice
+   unsigned int (ST_PLUGIN_API *get_array_param_num_variations) (st_plugin_info_t   *_info,
+                                                                 const unsigned int  _paramIdx
+                                                                 );
+
+   // Query address of array parameter variation value array
+   //  - fxn pointer can be NULL (no array parameters)
+   //  - 'variationIdx' must be in the range 0..(get_array_param_num_variations()-1)
+   //  - (note) this is used to load/save/update per-instance patch data
+   float * (ST_PLUGIN_API *get_array_param_variation_ptr) (st_plugin_shared_t *_shared,
+                                                           const unsigned int  _paramIdx,
+                                                           const unsigned int  _variationIdx
+                                                           );
+
+   // Force array parameter updates and override variation idx
+   //  - fxn pointer can be NULL (no update until next note_on)
+   //  - 'variationIdx' must be in the range 0..(get_array_param_num_variations()-1)  OR  -1=don't force variation idx and use param/mod value instead
+   //  - (note) this is called by editors when variation array editing starts / ends
+   //  - (note) while 'variationIdx' is != -1, voices must constantly update the effective voice array data associated with 'paramIdx'
+   //            (i.e. so that changes made in the editor are instantly audible without starting new voices)
+   void (ST_PLUGIN_API *set_array_param_edit_variation_idx) (st_plugin_shared_t *_shared,
+                                                             const unsigned int  _paramIdx,
+                                                             const int           _variationIdx
+                                                             );
+
+   // Query array parameter element name (editor UI)
+   //  - fxn pointer can be NULL (elements will be displayed as 0..n)
+   //  - caller must ensure that paramIdx and elementIdx are valid
+   //     - plugin should implement get_array_param_size() or bounds check will always fail
+   //  - the return value must be NULL or a constant char* that remains valid over the lifetime of the 'info' struct
+   const char *(ST_PLUGIN_API *get_array_param_element_name) (st_plugin_info_t   *_info,
+                                                              const unsigned int  _paramIdx,
+                                                              const unsigned int  _elementIdx
+                                                              );
+
+   // Query array parameter element value range (editor UI)
+   //  - fxn pointer can be NULL (elements will be displayed as 0..n)
+   //     - when NULL, editors should assume a storage and display value range of 0..1, with a precision of 5 fractional digits
+   //  - the returned min/max values describe a linear mapping of retStorageMin..retStorageMax to retDisplayMin..retDisplayMax
+   //     - (note) in most cases, all elements use the same storage and display ranges
+   //     - (note) the actual value storage range may differ from the displayed range, e.g. values stored as unsigneds may be mapped to signed values
+   //               - 'retValue*' receives the actual storage value range (never outside of -1..1)
+   //               - 'retDisplay*' receives the displayed value range (arbitrary floats, e.g. 0..127 or -16..16)
+   //     - (note) 'retDisplayPrecision' receives the preferred editing precision (fractional digits) (0=integer, 1=0.1, 2=0.01, 3=0.001, ..)
+   //               - editors may also use the range and precision info to pick the most suitable / most compact storage format
+   //                  (e.g. integer precision values in the display range 0..15 may be stored as 4bit nibbles)
+   //               - the Eureka host uses a signed 16 bit fixed point storage format by default
+   //                  (from a plugin's point of view, all array values are 32bit IEEE floating point numbers, though)
+   //     - NULL pointers are silently ignored
+   //  - returns 1 (true) when the query succeeded or 0 (false) when an error occured
+   int (ST_PLUGIN_API *get_array_param_element_value_range) (st_plugin_info_t   *_info,
+                                                             const unsigned int  _paramIdx,
+                                                             const unsigned int  _elementIdx,
+                                                             float              *_retStorageMin,
+                                                             float              *_retStorageMax,
+                                                             float              *_retDisplayMin,
+                                                             float              *_retDisplayMax,
+                                                             unsigned int       *_retDisplayPrecision
+                                                             );
+
+   // Map array parameter element value to display string (editor UI)
+   //  - fxn pointer can be NULL (element values will be displayed as 0..1)
+   //     - UIs may call 'get_array_param_element_value_range' as a fallback for mapping storage to display values
+   //     - this function is mainly useful for non-linear values like dB levels but also enumerations
+   //        - in case of enumerations, 'retDisplayPrecision' should be 0 and 'retDisplayMax' should be used to query the enumeration range
+   //  - 'storageValue' is in the storage value range (-1..1 or 0..1, see 'retStorageMin' / 'retStorageMax')
+   //  - 'retBuf' points to a char buffer than can hold up to 'retBufSize' characters
+   //  - the function returns the number of characters written to 'retBuf' (last char is always 0)
+   //  - when 'retBuf' is NULL, the function returns the total number of characters required (including ASCIIZ)
+   unsigned int (ST_PLUGIN_API *get_array_param_element_value_string) (st_plugin_info_t   *_info,
+                                                                       const unsigned int  _paramIdx,
+                                                                       const unsigned int  _elementIdx,
+                                                                       const float         _storageValue,
+                                                                       char               *_retBuf,
+                                                                       const unsigned int  _retBufSize
+                                                                       );
+
+   // Query array parameter element reset value (in display value range) (editor UI)
+   //  - fxn pointer can be NULL (elements will be displayed as 0..n)
+   //  - caller must ensure that paramIdx and elementIdx are valid
+   //     - plugin should implement get_array_param_size() or bounds check will always fail
+   //     - plugin should implement get_array_param_element_value_range() so the returned value can be mapped to storage range
+   //  - a return value <=-999999(INVALID_VALUE) indicates that there is no known reset value for the given element
+   float (ST_PLUGIN_API *get_array_param_element_reset) (st_plugin_info_t   *_info,
+                                                         const unsigned int  _paramIdx,
+                                                         const unsigned int  _elementIdx
+                                                         );
+
+   // Set host tempo (beats per minute)
+   //  - fxn pointer can be NULL
+   //  - called after set_sample_rate() and before note_on()
+   void (ST_PLUGIN_API *set_bpm) (st_plugin_voice_t *_voice, const float _bpm);
+
+
+
+   // Query parameter section name
+   //  - fxn pointer can be NULL (no parameter sections)
+   //  - sections are used to logically group parameters in the UI (e.g. "osc1", "osc2", "lfo", "ampenv", ..)
+   //  - parameter section indices are in the range 0..(num_sections-1)
+   //  - caller should finish section names queries when this function returns NULL
+   const char * (ST_PLUGIN_API *get_param_section_name) (st_plugin_info_t   *_info,
+                                                         const unsigned int  _paramSectionIdx
+                                                         );
+
+   // Query parameter section assignment
+   //  - fxn pointer can be NULL (no parameter sections)
+   //  - when the returned parameter section index (e.g. ~0u) can not be mapped to a parameter section name,
+   //     the parameter is not assigned to any section
+   unsigned int (ST_PLUGIN_API *get_param_section_idx) (st_plugin_info_t   *_info,
+                                                        const unsigned int  _paramIdx
+                                                        );
+
+   // Update LUT data
+   //  - fxn pointer can be NULL (no dynamic LUT updates)
+   //  - called by editor when envelope / waveform curve is edited
+   void (ST_PLUGIN_API *update_lut) (st_plugin_info_t   *_info,
+                                     unsigned int        _idx,
+                                     const float        *_src,
+                                     const unsigned int  _srcNumElements
+                                     );
+
+   void *_future[64 - 49];
 };
 
 
@@ -564,8 +702,14 @@ typedef st_plugin_info_t *(*ST_PLUGIN_API st_plugin_init_fxn_t) (unsigned int _p
 // Clip value to min/max range
 #define Dstplugin_clamp(a,m,x) ( ((a) < (m)) ? (m) : ((a) > (x)) ? (x) : (a) )
 
-// Remap normalized mod/param value 'a' to range min='m', max='x'
-#define Dstplugin_val_to_range(a,m,x)  ( ((a) * ((x) - (m))) + (m) )
+// Map normalized mod/param value 'a' (0..1) to range min='m', max='x' (linear interpolation / lerp)
+#define Dstplugin_scale(a,m,x)  ( ((a) * ((x) - (m))) + (m) )
+
+// Normalize value 'a' from range min='m', max='x' (to 0..1)
+#define Dstplugin_norm(a,m,x)  ( ((a) - (m)) / ((x) - (m)) )
+
+// Normalize value 'a' from range 'im'..'ix' and scale to range 'om'..'ox'
+#define Dstplugin_rescale(a,im,ix,om,ox)  Dstplugin_scale(Dstplugin_norm((a),(im),(ix)), (om), (ox))
 
 // Fix denormalized float value
 //  (note) denormals considerably degrade floating point performance on Intel CPUs
@@ -580,12 +724,13 @@ typedef st_plugin_info_t *(*ST_PLUGIN_API st_plugin_init_fxn_t) (unsigned int _p
 
 // Math constants
 #define ST_PLUGIN_PI    3.1415926535897932384626433832795029
-#define ST_PLUGIN_2PI   (ST_PLUGIN_PI * 2.0)
+#define ST_PLUGIN_2PI   (ST_PLUGIN_PI * 2.0)  // TAU
 #define ST_PLUGIN_PI2   (ST_PLUGIN_PI / 2.0)
 #define ST_PLUGIN_PI4   (ST_PLUGIN_PI / 4.0)
 #define ST_PLUGIN_LN2   0.6931471805599453094172321214581766
 #define ST_PLUGIN_LN10  2.3025850929940456840179914546843642
 #define ST_PLUGIN_E     2.7182818284590452353602874713526625
+#define ST_PLUGIN_SQR2  1.41421356237
 
 #define ST_PLUGIN_PI_F    ((float)ST_PLUGIN_PI)
 #define ST_PLUGIN_2PI_F   ((float)ST_PLUGIN_2PI)
@@ -594,14 +739,28 @@ typedef st_plugin_info_t *(*ST_PLUGIN_API st_plugin_init_fxn_t) (unsigned int _p
 #define ST_PLUGIN_LN2_F   ((float)ST_PLUGIN_LN2)
 #define ST_PLUGIN_LN10_F  ((float)ST_PLUGIN_LN10)
 #define ST_PLUGIN_E_F     ((float)ST_PLUGIN_E)
+#define ST_PLUGIN_SQR2_F  1.41421356f
 
-// Calc voicebus idx from param/mod
-#define Dstplugin_voicebus(i,p) \
-   if((p) < 0.0f) (p) = 0.0f;   \
-   (p) *= 100.0f;                          \
-   i = (unsigned int)((p) + 0.5f);   \
-   if(i >= ST_PLUGIN_MAX_LAYERS) \
-      i = ST_PLUGIN_MAX_LAYERS - 1u; \
+// (absolute) epsilon floating point value comparisons
+#define STPLUGIN_FLT_EPSILON 0.000005f
+#define STPLUGIN_DBL_EPSILON 0.000000000005
+
+#define Dstplugin_fltnonzero(a) ( ((a)>STPLUGIN_FLT_EPSILON) || ((a)<-STPLUGIN_FLT_EPSILON) )
+#define Dstplugin_fltequal(a,b) ( (((a)-STPLUGIN_FLT_EPSILON) <= (b)) && (((a)+STPLUGIN_FLT_EPSILON) >= (b)) )
+#define Dstplugin_fltnotequal(a,b) ( (((a)-STPLUGIN_FLT_EPSILON) > (b)) || (((a)+STPLUGIN_FLT_EPSILON) < (b)) )
+#define Dstplugin_fltzero(a) Dstplugin_fltequal(a, 0.0f)
+
+#define Dstplugin_dblnonzero(a) ( ((a)>STPLUGIN_DBL_EPSILON) || ((a)<-STPLUGIN_DBL_EPSILON) )
+#define Dstplugin_dblequal(a,b) ( (((a)-STPLUGIN_DBL_EPSILON) <= (b)) && (((a)+STPLUGIN_DBL_EPSILON) >= (b)) )
+#define Dstplugin_dblnotequal(a,b) ( (((a)-STPLUGIN_DBL_EPSILON) > (b)) || (((a)+STPLUGIN_DBL_EPSILON) < (b)) )
+#define Dstplugin_dblzero(a) Dstplugin_dblequal(a, 0.0)
+
+// Calc voicebus idx from int (0..32 => bus 0=<prev>,1..32)
+#define Dstplugin_voicebus_i(i,p) \
+   if((p) < 0) p = 0;                      \
+   i = (unsigned int)(p);                  \
+   if(i >= ST_PLUGIN_MAX_LAYERS)           \
+      i = ST_PLUGIN_MAX_LAYERS - 1u;       \
    if(0u == i) \
    { \
       if(0u != voice->base.layer_idx) \
@@ -611,10 +770,26 @@ typedef st_plugin_info_t *(*ST_PLUGIN_API st_plugin_init_fxn_t) (unsigned int _p
    else \
       i--
 
+// Calc voicebus idx from param/mod (float 0.0..0.32 => bus 0=<prev>,1..32)
+#define Dstplugin_voicebus_f(i,p) \
+   if((p) < 0.0f) (p) = 0.0f;              \
+   (p) *= 100.0f;                          \
+   i = (unsigned int)((p) + 0.5f);         \
+   if(i >= ST_PLUGIN_MAX_LAYERS)           \
+      i = ST_PLUGIN_MAX_LAYERS - 1u;       \
+   if(0u == i)                             \
+   {                                       \
+      if(0u != voice->base.layer_idx) \
+         i = voice->base.layer_idx - 1u;  /* previous layer output */ \
+      /* else: illegal ref to previous layer in first layer (=> use first layer) */ \
+   } \
+   else \
+      i--
+
 typedef union stplugin_fi_u {
    float        f;
-   unsigned int ui;
-   signed   int si;
+   unsigned int u;
+   signed   int s;
 } stplugin_fi_t;
 
 typedef union stplugin_us8_u {
@@ -632,4 +807,4 @@ typedef union stplugin_us16_u {
 }
 #endif
 
-#endif // __ST_PLUGIN_H__
+#endif // ST_PLUGIN_H__

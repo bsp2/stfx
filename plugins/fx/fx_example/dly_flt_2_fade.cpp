@@ -1,14 +1,14 @@
 // ----
 // ---- file   : dly_flt_2_fade.cpp
 // ---- author : Bastian Spiegel <bs@tkscript.de>
-// ---- legal  : (c) 2020-2021 by Bastian Spiegel. 
-// ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See 
+// ---- legal  : (c) 2020-2024 by Bastian Spiegel.
+// ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See
 // ----          http://www.gnu.org/licenses/licenses.html#LGPL or COPYING for further information.
 // ----
 // ---- info   : a cross feedback delay line with variable shape (sweepable multimode) filtering
 // ----
 // ---- created: 25May2020
-// ---- changed: 31May2020, 08Jun2020, 10Feb2021, 11Feb2021
+// ---- changed: 31May2020, 08Jun2020, 10Feb2021, 11Feb2021, 21Jan2024, 27Sep2024
 // ----
 // ----
 // ----
@@ -16,6 +16,7 @@
 // must be a power of two
 #define FADE_LEN  (256u)
 
+#include <stdio.h>  // snprintf
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -162,6 +163,20 @@ static float ST_PLUGIN_API loc_get_param_value(st_plugin_shared_t *_shared,
    return shared->params[_paramIdx];
 }
 
+static void ST_PLUGIN_API loc_get_param_value_string(st_plugin_shared_t  *_shared,
+                                                     unsigned int         _paramIdx,
+                                                     char                *_buf,
+                                                     unsigned int         _bufSize
+                                                     ) {
+   ST_PLUGIN_SHARED_CAST(dly_flt_2_fade_shared_t);
+   if(PARAM_TIME == _paramIdx)
+   {
+      const float maxMs = (float(ST_DELAY_SIZE) / 88.200f);    // maxMs @ 88.2kHz = ~371ms
+      const float ms = shared->params[PARAM_TIME] * maxMs;
+      snprintf(_buf, _bufSize, "%4.2f ms", ms);
+   }
+}
+
 static void ST_PLUGIN_API loc_set_param_value(st_plugin_shared_t *_shared,
                                               unsigned int        _paramIdx,
                                               float               _value
@@ -221,7 +236,7 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
    (void)_note;
    (void)_vol;
    (void)_pan;
-   
+
    float maxMs = (float(ST_DELAY_SIZE) / 88.200f);    // maxMs @ 88.2kHz = ~371
 
    float newTime = shared->params[PARAM_TIME] * powf(10.0f, voice->mods[MOD_TIME]);
@@ -245,7 +260,7 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
    modTimeR = (modTimeR * maxMs * (voice->sample_rate / 1000.0f));
    if(modTimeR >= (float)(ST_DELAY_SIZE - 1u))
       modTimeR = (float)(ST_DELAY_SIZE - 1u);
-   
+
    float modFbAmt = powf(10.0f, voice->mods[MOD_FB]);
 
 #define MAX_FB 1.0f
@@ -305,7 +320,7 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
 static void ST_PLUGIN_API loc_process_replace(st_plugin_voice_t  *_voice,
                                               int                 _bMonoIn,
                                               const float        *_samplesIn,
-                                              float              *_samplesOut, 
+                                              float              *_samplesOut,
                                               unsigned int        _numFrames
                                               ) {
    // Ring modulate at (modulated) note frequency
@@ -381,7 +396,8 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
    free(_shared);
 }
 
-static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
+static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info, unsigned int _voiceIdx) {
+   (void)_voiceIdx;
    dly_flt_2_fade_voice_t *ret = (dly_flt_2_fade_voice_t *)malloc(sizeof(dly_flt_2_fade_voice_t));
    if(NULL != ret)
    {
@@ -418,21 +434,22 @@ st_plugin_info_t *dly_flt_2_fade_init(void) {
       ret->base.num_params  = NUM_PARAMS;
       ret->base.num_mods    = NUM_MODS;
 
-      ret->base.shared_new       = &loc_shared_new;
-      ret->base.shared_delete    = &loc_shared_delete;
-      ret->base.voice_new        = &loc_voice_new;
-      ret->base.voice_delete     = &loc_voice_delete;
-      ret->base.get_param_name   = &loc_get_param_name;
-      ret->base.get_param_reset  = &loc_get_param_reset;
-      ret->base.get_param_value  = &loc_get_param_value;
-      ret->base.set_param_value  = &loc_set_param_value;
-      ret->base.get_mod_name     = &loc_get_mod_name;
-      ret->base.set_sample_rate  = &loc_set_sample_rate;
-      ret->base.note_on          = &loc_note_on;
-      ret->base.set_mod_value    = &loc_set_mod_value;
-      ret->base.prepare_block    = &loc_prepare_block;
-      ret->base.process_replace  = &loc_process_replace;
-      ret->base.plugin_exit      = &loc_plugin_exit;
+      ret->base.shared_new             = &loc_shared_new;
+      ret->base.shared_delete          = &loc_shared_delete;
+      ret->base.voice_new              = &loc_voice_new;
+      ret->base.voice_delete           = &loc_voice_delete;
+      ret->base.get_param_name         = &loc_get_param_name;
+      ret->base.get_param_reset        = &loc_get_param_reset;
+      ret->base.get_param_value        = &loc_get_param_value;
+      ret->base.get_param_value_string = &loc_get_param_value_string;
+      ret->base.set_param_value        = &loc_set_param_value;
+      ret->base.get_mod_name           = &loc_get_mod_name;
+      ret->base.set_sample_rate        = &loc_set_sample_rate;
+      ret->base.note_on                = &loc_note_on;
+      ret->base.set_mod_value          = &loc_set_mod_value;
+      ret->base.prepare_block          = &loc_prepare_block;
+      ret->base.process_replace        = &loc_process_replace;
+      ret->base.plugin_exit            = &loc_plugin_exit;
    }
 
    return &ret->base;

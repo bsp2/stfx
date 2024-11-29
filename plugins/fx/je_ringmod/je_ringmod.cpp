@@ -12,7 +12,7 @@
 // ---- info   : ring modulator (built-in sin/saw/rect osc)
 // ----
 // ---- created: 06Jun2020
-// ---- changed: 08Jun2020
+// ---- changed: 08Jun2020, 19Sep2024
 // ----
 // ----
 // ----
@@ -30,8 +30,9 @@
 #include "meta.h"
 #include "diode.h"
 
+#ifndef M_PI
 #define M_PI ST_PLUGIN_PI
-
+#endif
 
 #define PARAM_DRYWET       0
 #define PARAM_FREQ         1
@@ -296,11 +297,11 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
 
    float modVb = shared->params[PARAM_VB] + voice->mods[MOD_VB];
    modVb = Dstplugin_clamp(modVb, 0.0f, 1.0f);
-   modVb = Dstplugin_val_to_range(modVb, std::numeric_limits<float>::epsilon(), 1.0f);//g_controlPeakVoltage);
+   modVb = Dstplugin_scale(modVb, std::numeric_limits<float>::epsilon(), 1.0f);//g_controlPeakVoltage);
 
    float modVlVb = shared->params[PARAM_VLVB] + voice->mods[MOD_VLVB];
    modVlVb = Dstplugin_clamp(modVlVb, 0.0f, 1.0f);
-   modVlVb = Dstplugin_val_to_range(modVlVb, std::numeric_limits<float>::epsilon(), g_controlPeakVoltage);
+   modVlVb = Dstplugin_scale(modVlVb, std::numeric_limits<float>::epsilon(), g_controlPeakVoltage);
 
    float modOffset = (shared->params[PARAM_OFFSET]-0.5f)*2.0f + voice->mods[MOD_OFFSET];
 
@@ -567,7 +568,8 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
    free((void*)_shared);
 }
 
-static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
+static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info, unsigned int _voiceIdx) {
+   (void)_voiceIdx;
    je_ringmod_voice_t *ret = (je_ringmod_voice_t *)malloc(sizeof(je_ringmod_voice_t));
    if(NULL != ret)
    {

@@ -13,11 +13,10 @@
 // ----           see <http://smc2017.aalto.fi/media/materials/proceedings/SMC17_p336.pdf>
 // ----
 // ---- created: 07Jun2020
-// ---- changed: 08Jun2020, 01Nov2021
+// ---- changed: 08Jun2020, 01Nov2021, 21Jan2024, 19Sep2024
 // ----
 // ----
 // ----
-
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -279,11 +278,11 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
 
    float modR = shared->params[PARAM_R] + voice->mods[MOD_R];
    modR = Dstplugin_clamp(modR, 0.0f, 1.0f);
-   modR = Dstplugin_val_to_range(modR, 10000.0f, 100000.0f);
+   modR = Dstplugin_scale(modR, 10000.0f, 100000.0f);
 
    float modRI = shared->params[PARAM_RI] + voice->mods[MOD_RI];
    modRI = Dstplugin_clamp(modRI, 0.0f, 1.0f);
-   modRI = Dstplugin_val_to_range(modRI, 1000.0f, 10000.0f);
+   modRI = Dstplugin_scale(modRI, 1000.0f, 10000.0f);
 
    float modDrive2 = powf(10.0f, ((shared->params[PARAM_DRIVE2]-0.5f)*2.0f + voice->mods[MOD_DRIVE2])*3.0f);
 
@@ -415,7 +414,8 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
    free((void*)_shared);
 }
 
-static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
+static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info, unsigned int _voiceIdx) {
+   (void)_voiceIdx;
    je_wavefolder_voice_t *ret = (je_wavefolder_voice_t *)malloc(sizeof(je_wavefolder_voice_t));
    if(NULL != ret)
    {

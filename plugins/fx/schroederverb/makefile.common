@@ -1,0 +1,7 @@
+
+TARGET=schroederverb
+TARGET_DIR := $(TARGET_DIR)/fx
+
+ALL_OBJ= \
+	schroederverb.o \
+	schroederverb_main.o

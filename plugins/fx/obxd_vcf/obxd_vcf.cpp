@@ -686,7 +686,10 @@ Public License instead of this License.  But first, please read
 
 #include "../../../plugin.h"
 
+#ifndef M_PI
 #define M_PI ST_PLUGIN_PI
+#endif
+
 #include "Obxd/AudioUtils.h"
 #include "Obxd/Filter.h"
 
@@ -1006,7 +1009,8 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
    free((void*)_shared);
 }
 
-static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
+static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info, unsigned int _voiceIdx) {
+   (void)_voiceIdx;
    obxd_vcf_voice_t *ret = (obxd_vcf_voice_t *)malloc(sizeof(obxd_vcf_voice_t));
    if(NULL != ret)
    {

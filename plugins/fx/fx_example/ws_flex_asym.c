@@ -1,7 +1,7 @@
 // ----
 // ---- file   : ws_flex_asym.c
 // ---- author : Bastian Spiegel <bs@tkscript.de>
-// ---- legal  : (c) 2021 by Bastian Spiegel. 
+// ---- legal  : (c) 2021-2024 by Bastian Spiegel. 
 // ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See 
 // ----          http://www.gnu.org/licenses/licenses.html#LGPL or COPYING for further information.
 // ----
@@ -9,7 +9,7 @@
 // ----           idea based on DHE's 'cubic' VCV Rack module
 // ----
 // ---- created: 23Feb2021
-// ---- changed: 
+// ---- changed: 21Jan2024
 // ----
 // ----
 // ----
@@ -200,18 +200,18 @@ static float loc_bend(float f, float c) {
    uSign.f = f;
    stplugin_fi_t u;
    u.f = f;
-   u.ui &= 0x7fffFFFFu;
-   u.f *= (1.0f/0.4f);  // => 0..1
+   u.u &= 0x7fffFFFFu;
+   u.f *= (1.0f / 0.4f);  // => 0..1
    float linF = u.f;
    stplugin_fi_t cAbs;
    cAbs.f = c;
-   cAbs.ui &= 0x7fffFFFFu;
+   cAbs.u &= 0x7fffFFFFu;
    if(cAbs.f > 1.0f)
       cAbs.f = 1.0f;
    u.f = logf(1.0f + powf(u.f, 0.255f + powf(10.0f, c * 2.0f))) * 1.44269504089f/*div log(2)*/;
    u.f = linF + (u.f - linF) * cAbs.f;
    u.f *= 0.4f;
-   u.ui |= uSign.ui & 0x80000000u;
+   u.u |= uSign.u & 0x80000000u;
    return u.f;      
 }
 
@@ -356,7 +356,8 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
    free(_shared);
 }
 
-static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
+static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info, unsigned int _voiceIdx) {
+   (void)_voiceIdx;
    ws_flex_asym_voice_t *ret = malloc(sizeof(ws_flex_asym_voice_t));
    if(NULL != ret)
    {

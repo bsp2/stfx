@@ -104,7 +104,7 @@ class Comb {
       else if(freq >= sample_rate)
          freq = sample_rate;
       dly_smp_off = sUI((1.0f * sample_rate) / freq);
-      printf("xxx note=%f freq=%f dly_smp_off=%u\n", note, freq, dly_smp_off);
+      /* printf("xxx note=%f freq=%f dly_smp_off=%u\n", note, freq, dly_smp_off); */
    }
 
    sF32 process(sF32 _inSmp) {

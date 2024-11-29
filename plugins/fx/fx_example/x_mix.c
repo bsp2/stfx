@@ -1,14 +1,14 @@
 // ----
 // ---- file   : x_mix.c
 // ---- author : Bastian Spiegel <bs@tkscript.de>
-// ---- legal  : (c) 2020 by Bastian Spiegel. 
+// ---- legal  : (c) 2020-2024 by Bastian Spiegel. 
 // ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See 
 // ----          http://www.gnu.org/licenses/licenses.html#LGPL or COPYING for further information.
 // ----
 // ---- info   : a voice bus mixer
 // ----
 // ---- created: 08Jun2020
-// ---- changed: 
+// ---- changed: 19Jan2024, 21Jan2024
 // ----
 // ----
 // ----
@@ -155,7 +155,7 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
    modDryWet = Dstplugin_clamp(modDryWet, 0.0f, 1.0f);
 
    float modVoiceBus = shared->params[PARAM_VOICEBUS] + voice->mods[MOD_VOICEBUS];
-   Dstplugin_voicebus(voice->mod_voicebus_idx, modVoiceBus);
+   Dstplugin_voicebus_f(voice->mod_voicebus_idx, modVoiceBus);
 
    voice->b_debug_first = 1;
 
@@ -250,7 +250,8 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
    free(_shared);
 }
 
-static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
+static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info, unsigned int _voiceIdx) {
+   (void)_voiceIdx;
    x_mix_voice_t *ret = malloc(sizeof(x_mix_voice_t));
    if(NULL != ret)
    {

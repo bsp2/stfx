@@ -185,9 +185,9 @@ namespace Dsp
 
 		v = w = x = a + c*(b - a); d = e = 0.0;
 		fv = fw = fx = f(x);
-		int counter = 0;
+		// int counter = 0;
 	loop:
-		counter++;
+		// counter++;
 		m = 0.5*(a + b);
 		tol = SQRT_DBL_EPSILON*::fabs(x) + epsilon; t2 = 2.0*tol;
 		// Check stopping criteria

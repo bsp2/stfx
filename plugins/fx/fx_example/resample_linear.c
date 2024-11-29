@@ -1,14 +1,14 @@
 // ----
 // ---- file   : resample_linear.c
 // ---- author : Bastian Spiegel <bs@tkscript.de>
-// ---- legal  : (c) 2020 by Bastian Spiegel. 
+// ---- legal  : (c) 2020-2024 by Bastian Spiegel. 
 // ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See 
 // ----          http://www.gnu.org/licenses/licenses.html#LGPL or COPYING for further information.
 // ----
 // ---- info   : a resampler with linear filtering
 // ----
 // ---- created: 21May2020
-// ---- changed: 24May2020, 31May2020, 08Jun2020
+// ---- changed: 24May2020, 31May2020, 08Jun2020, 21Jan2024
 // ----
 // ----
 // ----
@@ -287,7 +287,8 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
    free(_shared);
 }
 
-static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
+static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info, unsigned int _voiceIdx) {
+   (void)_voiceIdx;
    resample_linear_voice_t *ret = malloc(sizeof(resample_linear_voice_t));
    if(NULL != ret)
    {

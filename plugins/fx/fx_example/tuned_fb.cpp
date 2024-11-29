@@ -1,14 +1,14 @@
 // ----
 // ---- file   : tuned_fb.cpp
 // ---- author : Bastian Spiegel <bs@tkscript.de>
-// ---- legal  : (c) 2020 by Bastian Spiegel. 
+// ---- legal  : (c) 2020-2024 by Bastian Spiegel. 
 // ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See 
 // ----          http://www.gnu.org/licenses/licenses.html#LGPL or COPYING for further information.
 // ----
 // ---- info   : a cross feedback delay line with variable shape (sweepable multimode) filtering
 // ----
 // ---- created: 25May2020
-// ---- changed: 31May2020, 01Jun2020, 02Jun2020, 08Jun2020
+// ---- changed: 31May2020, 01Jun2020, 02Jun2020, 08Jun2020, 21Jan2024
 // ----
 // ----
 // ----
@@ -386,7 +386,8 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
    free((void*)_shared);
 }
 
-static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
+static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info, unsigned int _voiceIdx) {
+   (void)_voiceIdx;
    tuned_fb_voice_t *ret = (tuned_fb_voice_t *)malloc(sizeof(tuned_fb_voice_t));
    if(NULL != ret)
    {

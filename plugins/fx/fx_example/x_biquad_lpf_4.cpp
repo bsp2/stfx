@@ -1,14 +1,14 @@
 // ----
 // ---- file   : x_biquad_lpf_4.cpp
 // ---- author : Bastian Spiegel <bs@tkscript.de>
-// ---- legal  : (c) 2020 by Bastian Spiegel. 
+// ---- legal  : (c) 2020-2024 by Bastian Spiegel. 
 // ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See 
 // ----          http://www.gnu.org/licenses/licenses.html#LGPL or COPYING for further information.
 // ----
 // ---- info   : a biquad low pass filter that supports per-sample-frame parameter interpolation and filter FM
 // ----
 // ---- created: 21May2020
-// ---- changed: 24May2020, 31May2020, 08Jun2020, 09Jun2020
+// ---- changed: 24May2020, 31May2020, 08Jun2020, 09Jun2020, 19Jan2024, 21Jan2024
 // ----
 // ----
 // ----
@@ -203,7 +203,7 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
    modQ = Dstplugin_clamp(modQ, 0.0f, 1.0f);
 
    float modVoiceBus = shared->params[PARAM_VOICEBUS] + voice->mods[MOD_VOICEBUS];
-   Dstplugin_voicebus(voice->mod_voicebus_idx, modVoiceBus);
+   Dstplugin_voicebus_f(voice->mod_voicebus_idx, modVoiceBus);
 
    float modBusLvl = (shared->params[PARAM_BUSLEVEL]-0.5f)*2.0f + voice->mods[MOD_BUSLEVEL];
 
@@ -322,7 +322,8 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
    free((void*)_shared);
 }
 
-static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
+static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info, unsigned int _voiceIdx) {
+   (void)_voiceIdx;
    x_biquad_lpf_4_voice_t *ret = (x_biquad_lpf_4_voice_t *)malloc(sizeof(x_biquad_lpf_4_voice_t));
    if(NULL != ret)
    {

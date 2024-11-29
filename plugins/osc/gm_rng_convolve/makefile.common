@@ -4,4 +4,5 @@ TARGET_DIR := $(TARGET_DIR)/osc
 CPPFLAGS +=
 
 ALL_OBJ= \
-	gm_rng_convolve.o
+	gm_rng_convolve.o \
+	main.o

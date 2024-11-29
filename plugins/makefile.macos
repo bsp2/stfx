@@ -1,0 +1,59 @@
+
+NUM_JOBS:=10
+
+.PHONY: clean
+clean:
+	make -j$(NUM_JOBS) -C fx/fx_example             -f makefile.macos clean
+	make -j$(NUM_JOBS) -C fx/je_ringmod             -f makefile.macos clean
+	make -j$(NUM_JOBS) -C fx/je_wavefolder          -f makefile.macos clean
+	make -j$(NUM_JOBS) -C fx/lindenberg_research    -f makefile.macos clean
+	make -j$(NUM_JOBS) -C fx/obxd_vcf               -f makefile.macos clean
+	make -j$(NUM_JOBS) -C fx/schroederverb          -f makefile.macos clean
+	make -j$(NUM_JOBS) -C fx/sql_bootyshifter       -f makefile.macos clean
+	make -j$(NUM_JOBS) -C fx/valley_plateau         -f makefile.macos clean
+	make -j$(NUM_JOBS) -C osc/befaco_noise_plethora -f makefile.macos clean
+	make -j$(NUM_JOBS) -C osc/gm_rng_convolve       -f makefile.macos clean
+##	make -j$(NUM_JOBS) -C osc/lofi_fm_stack_v1      -f makefile.macos clean
+##	make -j$(NUM_JOBS) -C osc/fm_stack_v1           -f makefile.macos clean
+	make -j$(NUM_JOBS) -C osc/fm_stack_v2           -f makefile.macos clean
+	make -j$(NUM_JOBS) -C cycle                     -f makefile.macos clean
+
+.PHONY: bin
+bin:
+	make -j$(NUM_JOBS) -C fx/fx_example             -f makefile.macos bin
+	make -j$(NUM_JOBS) -C fx/je_ringmod             -f makefile.macos bin
+	make -j$(NUM_JOBS) -C fx/je_wavefolder          -f makefile.macos bin
+	make -j$(NUM_JOBS) -C fx/lindenberg_research    -f makefile.macos bin
+	make -j$(NUM_JOBS) -C fx/obxd_vcf               -f makefile.macos bin
+	make -j$(NUM_JOBS) -C fx/schroederverb          -f makefile.macos bin
+	make -j$(NUM_JOBS) -C fx/sql_bootyshifter       -f makefile.macos bin
+	make -j$(NUM_JOBS) -C fx/valley_plateau         -f makefile.macos bin
+	make -j$(NUM_JOBS) -C osc/befaco_noise_plethora -f makefile.macos bin
+	make -j$(NUM_JOBS) -C osc/gm_rng_convolve       -f makefile.macos bin
+##	make -j$(NUM_JOBS) -C osc/lofi_fm_stack_v1      -f makefile.macos bin
+##	make -j$(NUM_JOBS) -C osc/fm_stack_v1           -f makefile.macos bin
+	make -j$(NUM_JOBS) -C osc/fm_stack_v2           -f makefile.macos bin
+	make -j$(NUM_JOBS) -C cycle                     -f makefile.macos bin
+
+.PHONY: install
+install:
+	make -j$(NUM_JOBS) -C fx/fx_example             -f makefile.macos install
+	make -j$(NUM_JOBS) -C fx/je_ringmod             -f makefile.macos install
+	make -j$(NUM_JOBS) -C fx/je_wavefolder          -f makefile.macos install
+	make -j$(NUM_JOBS) -C fx/lindenberg_research    -f makefile.macos install
+	make -j$(NUM_JOBS) -C fx/obxd_vcf               -f makefile.macos install
+	make -j$(NUM_JOBS) -C fx/schroederverb          -f makefile.macos install
+	make -j$(NUM_JOBS) -C fx/sql_bootyshifter       -f makefile.macos install
+	make -j$(NUM_JOBS) -C fx/valley_plateau         -f makefile.macos install
+	make -j$(NUM_JOBS) -C osc/befaco_noise_plethora -f makefile.macos install
+	make -j$(NUM_JOBS) -C osc/gm_rng_convolve       -f makefile.macos install
+#	make -j$(NUM_JOBS) -C osc/lofi_fm_stack_v1      -f makefile.macos install
+#	make -j$(NUM_JOBS) -C osc/fm_stack_v1           -f makefile.macos install
+	make -j$(NUM_JOBS) -C osc/fm_stack_v2           -f makefile.macos install
+	make -j$(NUM_JOBS) -C cycle                     -f makefile.macos install
+	@echo "voice-plugin install finished"
+
+# utility target for copying auto-generated sources from Eureka plugin folder
+.PHONY: update
+update:
+	make -j$(NUM_JOBS) -C cycle                     -f makefile.macos update

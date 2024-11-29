@@ -23,7 +23,7 @@
 // ----           (adapted from https://github.com/hemmer/Befaco for 'stfx' plugin API by bsp)
 // ----
 // ---- created: 05Dec2021
-// ---- changed: 
+// ---- changed: 21Jan2024
 // ----
 // ----
 // ----
@@ -267,7 +267,8 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
    free((void*)_shared);
 }
 
-static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
+static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info, unsigned int _voiceIdx) {
+   (void)_voiceIdx;
    noiseplethora_ab_voice_t *ret = (noiseplethora_ab_voice_t *)malloc(sizeof(noiseplethora_ab_voice_t));
    if(NULL != ret)
    {

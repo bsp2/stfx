@@ -20,7 +20,7 @@
 // ----
 // ---- info   : GM's RNG convolver (see https://gearspace.com/board/attachments/electronic-music-instruments-and-electronic-music-production/1014442d1650910676-novel-old-1970s-style-anolge-physical-modeling-efficient-real-time-pulse-convolution-synthesis.pdf)
 // ---- created: 26Apr2022
-// ---- changed: 27Apr2022
+// ---- changed: 27Apr2022, 21Jan2024
 // ----
 // ----
 // ----
@@ -390,7 +390,7 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
    free((void*)_shared);
 }
 
-static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
+static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info, unsigned int _voiceIdx) {
    gm_rng_convolve_voice_t *ret = (gm_rng_convolve_voice_t *)malloc(sizeof(gm_rng_convolve_voice_t));
    if(NULL != ret)
    {
@@ -446,15 +446,6 @@ st_plugin_info_t *gm_rng_convolve_init(void) {
    }
 
    return &ret->base;
-}
-
-ST_PLUGIN_APICALL st_plugin_info_t *ST_PLUGIN_API st_plugin_init(unsigned int _pluginIdx) {
-   switch(_pluginIdx)
-   {
-      case 0u:
-         return gm_rng_convolve_init();
-   }
-   return NULL;
 }
 
 } // extern "C"

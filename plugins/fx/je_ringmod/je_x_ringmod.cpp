@@ -12,7 +12,7 @@
 // ---- info   : ring modulator (voicebus crossmod version)
 // ----
 // ---- created: 06Jun2020
-// ---- changed: 08Jun2020, 09Jun2020
+// ---- changed: 08Jun2020, 09Jun2020, 19Jan2024, 21Jan2024, 19Sep2024
 // ----
 // ----
 // ----
@@ -275,18 +275,18 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
    modDryWet = Dstplugin_clamp(modDryWet, 0.0f, 1.0f);
 
    float modVoiceBus = shared->params[PARAM_VOICEBUS] + voice->mods[MOD_VOICEBUS];
-   Dstplugin_voicebus(voice->mod_voicebus_idx, modVoiceBus);
+   Dstplugin_voicebus_f(voice->mod_voicebus_idx, modVoiceBus);
 
    float modLvl1 = powf(10.0f, ((shared->params[PARAM_INPUT_LVL]-0.5f)*2.0f + voice->mods[MOD_LVL1])*3.0f);
    float modLvl2 = powf(10.0f, ((shared->params[PARAM_CARRIER_LVL]-0.5f)*2.0f + voice->mods[MOD_LVL2])*3.0f);
 
    float modVb = shared->params[PARAM_VB] + voice->mods[MOD_VB];
    modVb = Dstplugin_clamp(modVb, 0.0f, 1.0f);
-   modVb = Dstplugin_val_to_range(modVb, std::numeric_limits<float>::epsilon(), 1.0f);//g_controlPeakVoltage);
+   modVb = Dstplugin_scale(modVb, std::numeric_limits<float>::epsilon(), 1.0f);//g_controlPeakVoltage);
 
    float modVlVb = shared->params[PARAM_VLVB] + voice->mods[MOD_VLVB];
    modVlVb = Dstplugin_clamp(modVlVb, 0.0f, 1.0f);
-   modVlVb = Dstplugin_val_to_range(modVlVb, std::numeric_limits<float>::epsilon(), g_controlPeakVoltage);
+   modVlVb = Dstplugin_scale(modVlVb, std::numeric_limits<float>::epsilon(), g_controlPeakVoltage);
 
    float modOffset = (shared->params[PARAM_OFFSET]-0.5f)*2.0f + voice->mods[MOD_OFFSET];
 
@@ -427,7 +427,8 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
    free((void*)_shared);
 }
 
-static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
+static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info, unsigned int _voiceIdx) {
+   (void)_voiceIdx;
    je_x_ringmod_voice_t *ret = (je_x_ringmod_voice_t *)malloc(sizeof(je_x_ringmod_voice_t));
    if(NULL != ret)
    {

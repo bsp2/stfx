@@ -1,0 +1,8 @@
+
+TARGET=valley_plateau
+TARGET_DIR := $(TARGET_DIR)/fx
+
+ALL_OBJ= \
+	Common/DSP/OnePoleFilters.o \
+	Plateau/Dattorro.o \
+	valley_plateau.o

@@ -1,0 +1,6 @@
+
+include ../../plugin_pre_macos.mk
+
+include makefile.common
+
+include ../../plugin_post_macos.mk

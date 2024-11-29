@@ -1,7 +1,7 @@
 // ----
 // ---- file   : ws_tanh.c
 // ---- author : Bastian Spiegel <bs@tkscript.de>
-// ---- legal  : (c) 2020 by Bastian Spiegel. 
+// ---- legal  : (c) 2020-2024 by Bastian Spiegel. 
 // ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See 
 // ----          http://www.gnu.org/licenses/licenses.html#LGPL or COPYING for further information.
 // ----
@@ -9,7 +9,7 @@
 // ----
 // ---- created: 10May2009
 // ---- changed: 23May2010, 30Sep2010, 07Oct2010, 17May2020, 18May2020, 19May2020, 20May2020
-// ----          21May2020, 24May2020, 31May2020, 08Jun2020
+// ----          21May2020, 24May2020, 31May2020, 08Jun2020, 06Jan2023, 21Jan2024
 // ----
 // ----
 // ----
@@ -21,10 +21,12 @@
 
 #define PARAM_DRYWET   0
 #define PARAM_DRIVE    1
-#define NUM_PARAMS     2
+#define PARAM_APPROX   2
+#define NUM_PARAMS     3
 static const char *loc_param_names[NUM_PARAMS] = {
    "Dry / Wet",
-   "Drive"
+   "Drive",
+   "Approx",
 };
 static float loc_param_resets[NUM_PARAMS] = {
    1.0f,  // DRYWET
@@ -156,6 +158,12 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
    }
 }
 
+static inline float loc_tanhf_approx(const float f) {
+   // f=+-10 => +-1.37
+   float ff = f*f;
+   return f * (27.0f + ff) / (27.0f + 9.0f*ff);
+}
+
 static void ST_PLUGIN_API loc_process_replace(st_plugin_voice_t  *_voice,
                                               int                 _bMonoIn,
                                               const float        *_samplesIn,
@@ -167,42 +175,86 @@ static void ST_PLUGIN_API loc_process_replace(st_plugin_voice_t  *_voice,
 
    unsigned int k = 0u;
 
-   if(_bMonoIn)
+   if(shared->params[PARAM_APPROX] >= 0.5f)
    {
-      // Mono input, stereo output
-      for(unsigned int i = 0u; i < _numFrames; i++)
+      if(_bMonoIn)
       {
-         float l = _samplesIn[k];
-         float a = tanhf(l * voice->mod_drive_cur);
-         float out = l + (a - l) * voice->mod_drywet_cur;
-         out = Dstplugin_fix_denorm_32(out);
-         _samplesOut[k]      = out;
-         _samplesOut[k + 1u] = out;
-         // Next frame
-         k += 2u;
-         voice->mod_drywet_cur += voice->mod_drywet_inc;
-         voice->mod_drive_cur  += voice->mod_drive_inc;
+         // Mono input, stereo output
+         for(unsigned int i = 0u; i < _numFrames; i++)
+         {
+            float l = _samplesIn[k];
+            float a = loc_tanhf_approx(l * voice->mod_drive_cur);
+            float out = l + (a - l) * voice->mod_drywet_cur;
+            out = Dstplugin_fix_denorm_32(out);
+            _samplesOut[k]      = out;
+            _samplesOut[k + 1u] = out;
+            // Next frame
+            k += 2u;
+            voice->mod_drywet_cur += voice->mod_drywet_inc;
+            voice->mod_drive_cur  += voice->mod_drive_inc;
+         }
+      }
+      else
+      {
+         // Stereo input, stereo output
+         for(unsigned int i = 0u; i < _numFrames; i++)
+         {
+            float l = _samplesIn[k];
+            float r = _samplesIn[k + 1u];
+            float outL = loc_tanhf_approx(l * voice->mod_drive_cur);
+            float outR = loc_tanhf_approx(r * voice->mod_drive_cur);
+            outL = l + (outL - l) * voice->mod_drywet_cur;
+            outR = r + (outR - r) * voice->mod_drywet_cur;
+            outL = Dstplugin_fix_denorm_32(outL);
+            outR = Dstplugin_fix_denorm_32(outR);
+            _samplesOut[k]      = outL;
+            _samplesOut[k + 1u] = outR;
+            // Next frame
+            k += 2u;
+            voice->mod_drywet_cur += voice->mod_drywet_inc;
+            voice->mod_drive_cur  += voice->mod_drive_inc;
+         }
       }
    }
    else
    {
-      // Stereo input, stereo output
-      for(unsigned int i = 0u; i < _numFrames; i++)
+      if(_bMonoIn)
       {
-         float l = _samplesIn[k];
-         float r = _samplesIn[k + 1u];
-         float outL = tanhf(l * voice->mod_drive_cur);
-         float outR = tanhf(r * voice->mod_drive_cur);
-         outL = l + (outL - l) * voice->mod_drywet_cur;
-         outR = r + (outR - r) * voice->mod_drywet_cur;
-         outL = Dstplugin_fix_denorm_32(outL);
-         outR = Dstplugin_fix_denorm_32(outR);
-         _samplesOut[k]      = outL;
-         _samplesOut[k + 1u] = outR;
-         // Next frame
-         k += 2u;
-         voice->mod_drywet_cur += voice->mod_drywet_inc;
-         voice->mod_drive_cur  += voice->mod_drive_inc;
+         // Mono input, stereo output
+         for(unsigned int i = 0u; i < _numFrames; i++)
+         {
+            float l = _samplesIn[k];
+            float a = tanhf(l * voice->mod_drive_cur);
+            float out = l + (a - l) * voice->mod_drywet_cur;
+            out = Dstplugin_fix_denorm_32(out);
+            _samplesOut[k]      = out;
+            _samplesOut[k + 1u] = out;
+            // Next frame
+            k += 2u;
+            voice->mod_drywet_cur += voice->mod_drywet_inc;
+            voice->mod_drive_cur  += voice->mod_drive_inc;
+         }
+      }
+      else
+      {
+         // Stereo input, stereo output
+         for(unsigned int i = 0u; i < _numFrames; i++)
+         {
+            float l = _samplesIn[k];
+            float r = _samplesIn[k + 1u];
+            float outL = tanhf(l * voice->mod_drive_cur);
+            float outR = tanhf(r * voice->mod_drive_cur);
+            outL = l + (outL - l) * voice->mod_drywet_cur;
+            outR = r + (outR - r) * voice->mod_drywet_cur;
+            outL = Dstplugin_fix_denorm_32(outL);
+            outR = Dstplugin_fix_denorm_32(outR);
+            _samplesOut[k]      = outL;
+            _samplesOut[k + 1u] = outR;
+            // Next frame
+            k += 2u;
+            voice->mod_drywet_cur += voice->mod_drywet_inc;
+            voice->mod_drive_cur  += voice->mod_drive_inc;
+         }
       }
    }
 }
@@ -222,7 +274,8 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
    free(_shared);
 }
 
-static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
+static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info, unsigned int _voiceIdx) {
+   (void)_voiceIdx;
    ws_tanh_voice_t *ret = malloc(sizeof(ws_tanh_voice_t));
    if(NULL != ret)
    {

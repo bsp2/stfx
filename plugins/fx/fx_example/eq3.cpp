@@ -1,14 +1,14 @@
 // ----
 // ---- file   : eq3.cpp
-// ---- author : Bastian Spiegel <bs@tkscript.de>
-// ---- legal  : (c) 2021 by Bastian Spiegel. 
+// ---- author : 
+// ---- legal  : (c) 2021-2024 by Neil C / Etanza Systems / 2K6
 // ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See 
 // ----          http://www.gnu.org/licenses/licenses.html#LGPL or COPYING for further information.
 // ----
 // ---- info   : simple 3-band EQ
 // ----
 // ---- created: 31May2021
-// ---- changed: 
+// ---- changed: 21Jan2024
 // ----
 // ----
 // ----
@@ -447,7 +447,8 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
    free((void*)_shared);
 }
 
-static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
+static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info, unsigned int _voiceIdx) {
+   (void)_voiceIdx;
    eq3_voice_t *ret = (eq3_voice_t *)malloc(sizeof(eq3_voice_t));
    if(NULL != ret)
    {

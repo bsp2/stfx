@@ -23,7 +23,7 @@
 // ----           (adapted from https://github.com/hemmer/Befaco for 'stfx' plugin API by bsp)
 // ----
 // ---- created: 05Dec2021
-// ---- changed: 
+// ---- changed: 21Jan2024
 // ----
 // ----
 // ----
@@ -203,7 +203,7 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
 
    float modReso1 = shared->params[PARAM_RESO_1] + voice->mods[MOD_RESO_1];
    modReso1 = Dstplugin_clamp(modReso1, 0.0f, 1.0f);
-   modReso1 = Dstplugin_val_to_range(modReso1, 1, 10);
+   modReso1 = Dstplugin_scale(modReso1, 1, 10);
 
    // Filter 2
    float modMode2 = shared->params[PARAM_MODE_2];
@@ -217,7 +217,7 @@ static void ST_PLUGIN_API loc_prepare_block(st_plugin_voice_t *_voice,
 
    float modReso2 = shared->params[PARAM_RESO_2] + voice->mods[MOD_RESO_2];
    modReso2 = Dstplugin_clamp(modReso2, 0.0f, 1.0f);
-   modReso2 = Dstplugin_val_to_range(modReso2, 1, 10);
+   modReso2 = Dstplugin_scale(modReso2, 1, 10);
 
    if(_numFrames > 0u)
    {
@@ -331,7 +331,8 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
    free((void*)_shared);
 }
 
-static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
+static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info, unsigned int _voiceIdx) {
+   (void)_voiceIdx;
    noiseplethora_cwhite_voice_t *ret = (noiseplethora_cwhite_voice_t *)malloc(sizeof(noiseplethora_cwhite_voice_t));
    if(NULL != ret)
    {

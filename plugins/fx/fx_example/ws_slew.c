@@ -1,14 +1,14 @@
 // ----
 // ---- file   : ws_slew.c
 // ---- author : Bastian Spiegel <bs@tkscript.de>
-// ---- legal  : (c) 2021 by Bastian Spiegel. 
+// ---- legal  : (c) 2021-2024 by Bastian Spiegel. 
 // ----          Distributed under terms of the GNU LESSER GENERAL PUBLIC LICENSE (LGPL). See 
 // ----          http://www.gnu.org/licenses/licenses.html#LGPL or COPYING for further information.
 // ----
 // ---- info   : waveshaper with configurable rise/fall slew rates and log..lin..exp curve
 // ----
 // ---- created: 14Apr2021
-// ---- changed: 
+// ---- changed: 21Jan2024, 14Oct2024
 // ----
 // ----
 // ----
@@ -198,9 +198,9 @@ static float loc_mathLogLinExpf(float _f, float _c) {
    uSign.f = _f;
    stplugin_fi_t u;
    u.f = _f;
-   u.ui &= 0x7fffFFFFu;
+   u.u &= 0x7fffFFFFu;
    u.f = powf(u.f, powf(2.0f, _c));
-   u.ui |= uSign.ui & 0x80000000u;
+   u.u |= uSign.u & 0x80000000u;
    return u.f;
 }
 
@@ -326,7 +326,8 @@ static void ST_PLUGIN_API loc_shared_delete(st_plugin_shared_t *_shared) {
    free(_shared);
 }
 
-static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info) {
+static st_plugin_voice_t *ST_PLUGIN_API loc_voice_new(st_plugin_info_t *_info, unsigned int _voiceIdx) {
+   (void)_voiceIdx;
    ws_slew_voice_t *ret = malloc(sizeof(ws_slew_voice_t));
    if(NULL != ret)
    {

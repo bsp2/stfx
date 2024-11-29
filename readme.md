@@ -152,9 +152,9 @@ see [fx_example](https://github.com/bsp2/stfx/blob/master/plugins/fx/fx_example/
 The interface can be considered stable.
 There are a few reserved bytes in each struct for future extensions. These should be set to 0.
 
-The following applications can currently load `stfx` plugins:
+The following applications can currently load (and also create) `stfx` plugins:
 
 - `Eureka` software sampler / synth, see [miditracker.org](http://miditracker.org)
 - `Cycle` modular softsynth, see [miditracker.org](http://miditracker.org)
 
-At the moment there are ~100 plugins available.
+There are currently 183 plugins available in this repository (plus an _infinite_ number of Cycle-generated ones).
